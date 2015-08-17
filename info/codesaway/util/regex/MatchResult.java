@@ -1,5 +1,9 @@
 package info.codesaway.util.regex;
 
+import java.util.List;
+import java.util.Map.Entry;
+import java.util.Set;
+
 /**
  * The result of a match operation.
  * 
@@ -9,11 +13,59 @@ package info.codesaway.util.regex;
  * <p>This interface contains query methods used to determine the
  * results of a match against a regular expression. The match boundaries,
  * groups and group boundaries can be seen but not modified through
- * a <code>MatchResult</code>.
+ * a <code>MatchResult</code>.</p>
+ * 
+ * <br />
+ * 
+ * <p>Starting with Version 0.2, <code>MatchResult</code> extends
+ * <code>Iterable&lt;MatchResult&gt;</code> and is Groovified,
+ * adding some useful functionality.</p>
+ * 
+ * <p>Given the following MatchResult:</p>
+ * 
+ * <pre><code> Pattern pattern = Pattern.compile("(a)(b)(c)(d)");
+ * Matcher matcher = pattern.matcher("abcd");
+ * matcher.find();
+ * 
+ * MatchResult result = matcher.toMatchResult();</code></pre>
+ * 
+ * <p>Loop through each group (by group number):</p>
+ * 
+ * <pre><code>&nbsp; <span style='color: green'
+ * >// Loops for group = 1 to 3 (group count)</span>
+ * &nbsp; for (int group : result.keySet()) {
+ * &nbsp; &nbsp; <span style='color: green'>/*
+ * &nbsp; &nbsp; * Output:
+ * &nbsp; &nbsp; *
+ * &nbsp; &nbsp; * result[1] = a
+ * &nbsp; &nbsp; * result[2] = b
+ * &nbsp; &nbsp; * result[3] = c
+ * &nbsp; &nbsp; *<!---->/</span>
+ * &nbsp; &nbsp; System.out.printf("result[%d] = %s%n", group, <span
+ * >result.group(group));</span>
+ * &nbsp; }</code></pre>
+ * 
+ * <p>Loop through each group's value:</p>
+ * 
+ * <pre><code>&nbsp; <span style='color: green'
+ * >// Loops for each value</span>
+ * &nbsp; for (String groupValue : result.values()) {
+ * &nbsp; &nbsp; <span style='color: green'>/*
+ * &nbsp; &nbsp; * Output:
+ * &nbsp; &nbsp; *
+ * &nbsp; &nbsp; * Value = a
+ * &nbsp; &nbsp; * Value = b
+ * &nbsp; &nbsp; * Value = c
+ * &nbsp; &nbsp; *<!---->/</span>
+ * &nbsp; &nbsp; System.out.printf("Value = %s%n", groupValue);
+ * &nbsp; }</code></pre>
  * 
  * @see Matcher
  */
-public interface MatchResult
+// public interface MatchResult extends Iterable<List<String>>, Map<Integer, String>
+// public interface MatchResult extends Iterable<List<String>>
+public interface MatchResult extends Iterable<MatchResult>
+// public interface MatchResult extends Iterable<MatchResult>, Map<Integer, String>
 {
 	/**
 	 * Returns the start index of the match.
@@ -50,7 +102,7 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             with the given index
 	 */
-	public abstract int start(int group);
+	public int start(int group);
 
 	/**
 	 * Returns the start index of the subsequence captured by the given
@@ -71,7 +123,7 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public abstract int start(String group);
+	public int start(String group);
 
 	/**
 	 * Returns the start index of the subsequence captured by the given
@@ -104,7 +156,7 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public abstract int start(String groupName, int occurrence);
+	public int start(String groupName, int occurrence);
 
 	/**
 	 * Returns the offset after the last character matched.
@@ -141,7 +193,7 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             with the given index
 	 */
-	public abstract int end(int group);
+	public int end(int group);
 
 	/**
 	 * Returns the offset after the last character of the subsequence
@@ -163,7 +215,7 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public abstract int end(String group);
+	public int end(String group);
 
 	/**
 	 * Returns the offset after the last character of the subsequence
@@ -197,7 +249,7 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public abstract int end(String groupName, int occurrence);
+	public int end(String groupName, int occurrence);
 
 	/**
 	 * Returns the occurrence of the first <i>matched</i> group with the given
@@ -220,8 +272,7 @@ public interface MatchResult
 	 * Returns the occurrence of the first <i>matched</i> group with the given
 	 * name.
 	 * 
-	 * <p><a href="Pattern.html#branchreset">Branch reset</a> patterns and the
-	 * {@link Pattern#DUPLICATE_NAMES} flag
+	 * <p><a href="Pattern.html#branchreset">Branch reset</a> patterns and the {@link Pattern#DUPLICATE_NAMES} flag
 	 * allow multiple capture groups with the same group name to exist.
 	 * This method offers a way to determine which occurrence matched.</p>
 	 * 
@@ -252,7 +303,7 @@ public interface MatchResult
 	 *             If no match has yet been attempted,
 	 *             or if the previous match operation failed
 	 */
-	public abstract String group();
+	public String group();
 
 	/**
 	 * Returns the input subsequence captured by the given group during the
@@ -289,7 +340,7 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             with the given index
 	 */
-	public abstract String group(int group);
+	public String group(int group);
 
 	/**
 	 * Returns the input subsequence captured by the given group during the
@@ -335,7 +386,7 @@ public interface MatchResult
 	 * 
 	 * @see #group(int)
 	 */
-	public abstract String group(int group, String defaultValue);
+	public String group(int group, String defaultValue);
 
 	/**
 	 * Returns the input subsequence captured by the given
@@ -363,7 +414,7 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public abstract String group(String group);
+	public String group(String group);
 
 	/**
 	 * Returns the input subsequence captured by the given
@@ -404,7 +455,7 @@ public interface MatchResult
 	 * 
 	 * @see #group(String)
 	 */
-	public abstract String group(String group, String defaultValue);
+	public String group(String group, String defaultValue);
 
 	/**
 	 * Returns the input subsequence captured by the given
@@ -444,7 +495,7 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public abstract String group(String groupName, int occurrence);
+	public String group(String groupName, int occurrence);
 
 	/**
 	 * Returns the input subsequence captured by the given
@@ -501,7 +552,7 @@ public interface MatchResult
 	 * 
 	 * @see #group(String, int)
 	 */
-	public abstract String group(String groupName, int occurrence,
+	public String group(String groupName, int occurrence,
 			String defaultValue);
 
 	/**
@@ -516,7 +567,15 @@ public interface MatchResult
 	 * 
 	 * @return The number of capturing groups in this matcher result's pattern
 	 */
-	public abstract int groupCount();
+	public int groupCount();
+
+	/**
+	 * 
+	 * @param group
+	 * @return
+	 * @since 0.2
+	 */
+	public int groupCount(int group);
 
 	/**
 	 * Returns the number of capturing groups (with the given group name) in
@@ -544,7 +603,52 @@ public interface MatchResult
 	 * @return The number of capturing groups (with the given group name) in
 	 *         this matcher's pattern
 	 */
-	public abstract int groupCount(String groupName);
+	public int groupCount(String groupName);
+
+	/**
+	 * Indicates whether this match has any capturing groups.
+	 * 
+	 * @return <code>true</code> if this match has at least one capturing group; otherwise, <code>false</code>
+	 * 
+	 * @since 0.2
+	 */
+	public boolean hasGroup();
+
+	/**
+	 * Indicates whether this match contains the specified group.
+	 * 
+	 * @param group
+	 *            The group index for a capturing group in this match's pattern
+	 * @return <code>true</code> if this match contains the specified group; otherwise, <code>false</code>.
+	 * 
+	 * @since 0.2
+	 */
+	public boolean hasGroup(int group);
+
+	/**
+	 * Indicates whether this match contains the specified group.
+	 * 
+	 * @param group
+	 *            A capturing group in this match's pattern
+	 * @return <code>true</code> if this match contains the specified group; otherwise, <code>false</code>.
+	 * 
+	 * @since 0.2
+	 */
+	public boolean hasGroup(String group);
+
+	/**
+	 * Indicates whether this match contains the specified group.
+	 * 
+	 * @param groupName
+	 *            The group name for a capturing group in this match's pattern
+	 * 
+	 * @param occurrence
+	 *            The occurrence of the specified group name
+	 * @return <code>true</code> if this match contains the specified group; otherwise, <code>false</code>.
+	 * 
+	 * @since 0.2
+	 */
+	public boolean hasGroup(String groupName, int occurrence);
 
 	/**
 	 * Returns whether the match was successful.
@@ -560,7 +664,7 @@ public interface MatchResult
 	 * 
 	 * @return <code>true</code> if the match was successful
 	 */
-	public abstract boolean matched();
+	public boolean matched();
 
 	/**
 	 * Returns whether the specified group matched any part of the input
@@ -591,7 +695,41 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             with the given index
 	 */
-	public abstract boolean matched(int group);
+	public boolean matched(int group);
+
+	/**
+	 * Returns whether the specified group matched any part of the input
+	 * sequence.
+	 * 
+	 * <p><a href="Pattern.html#cg">Capturing groups</a> are indexed
+	 * from left to right, starting at one. Group zero denotes the entire
+	 * pattern, so the expression <tt>m.matched(0)</tt> is equivalent to
+	 * <tt>m.matched()</tt>.</p>
+	 * 
+	 * <p>If the match was successful but the group specified failed to match
+	 * any part of the input sequence, then <tt>false</tt> is returned. Note
+	 * that some groups, for example <tt>(a*)</tt>, match the empty string. This
+	 * method will return <code>true</code> when such a group successfully
+	 * matches the empty string in the input.</p>
+	 * 
+	 * @param group
+	 *            The index of a capturing group in this matcher's pattern
+	 * @param validateGroup
+	 *            whether to validate the group, and throw an <code>IndexOutOfBoundsException</code> in the case the the
+	 *            group is invalid.
+	 * 
+	 * @return <code>true</code> if in the previous match, the group matched
+	 *         part of the input.
+	 * 
+	 * @throws IllegalStateException
+	 *             If no match has yet been attempted,
+	 *             or if the previous match operation failed
+	 * 
+	 * @throws IndexOutOfBoundsException
+	 *             If <code>validateGroup</code> is <code>true</code> and there is no capturing group in the pattern
+	 *             with the given index
+	 */
+	public boolean matched(int group, boolean validateGroup);
 
 	/**
 	 * Returns whether the specified <a href="Pattern.html#group">group</a>
@@ -617,7 +755,36 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public abstract boolean matched(String group);
+	public boolean matched(String group);
+
+	/**
+	 * Returns whether the specified <a href="Pattern.html#group">group</a>
+	 * matched any part of the input sequence.
+	 * 
+	 * <p>If the match was successful but the group specified failed to match
+	 * any part of the input sequence, then <tt>false</tt> is returned. Note
+	 * that some groups, for example <tt>(a*)</tt>, match the empty string. This
+	 * method will return <code>true</code> when such a group successfully
+	 * matches the empty string in the input.</p>
+	 * 
+	 * @param group
+	 *            A capturing group in this matcher's pattern
+	 * @param validateGroup
+	 *            whether to validate the group, and throw an <code>IllegalArgumentException</code> in the case the the
+	 *            group is invalid.
+	 * 
+	 * @return <code>true</code> if in the previous match, the group matched
+	 *         part of the input.
+	 * 
+	 * @throws IllegalStateException
+	 *             If no match has yet been attempted,
+	 *             or if the previous match operation failed
+	 * 
+	 * @throws IllegalArgumentException
+	 *             If <code>validateGroup</code> is <code>true</code> and there is no capturing group in the pattern
+	 *             of the given group
+	 */
+	public boolean matched(String group, boolean validateGroup);
 
 	/**
 	 * Returns whether the specified <a href="Pattern.html#group">group</a>
@@ -655,7 +822,49 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public abstract boolean matched(String groupName, int occurrence);
+	public boolean matched(String groupName, int occurrence);
+
+	/**
+	 * Returns whether the specified <a href="Pattern.html#group">group</a>
+	 * matched any part of the input sequence.
+	 * 
+	 * <p>If the match was successful but the group specified failed to match
+	 * any part of the input sequence, then <tt>false</tt> is returned. Note
+	 * that some groups, for example <tt>(a*)</tt>, match the empty string. This
+	 * method will return <code>true</code> when such a group successfully
+	 * matches the empty string in the input.</p>
+	 * 
+	 * <p>An invocation of this convenience method of the form</p>
+	 * 
+	 * <blockquote><pre>m.matched(groupName, occurrence, validateGroup)</pre></blockquote>
+	 * 
+	 * <p>behaves in exactly the same way as</p>
+	 * 
+	 * <blockquote><pre>
+	 * m.matched(groupName + "[" + occurrence + "]", validateGroup)</pre></blockquote>
+	 * 
+	 * @param groupName
+	 *            The group name for a capturing group in this matcher's pattern
+	 * 
+	 * @param occurrence
+	 *            The occurrence of the specified group name
+	 * 
+	 * @param validateGroup
+	 *            whether to validate the group, and throw an <code>IllegalArgumentException</code> in the case the the
+	 *            group is invalid.
+	 *            
+	 * @return <code>true</code> if in the previous match, the group matched
+	 *         part of the input.
+	 * 
+	 * @throws IllegalStateException
+	 *             If no match has yet been attempted,
+	 *             or if the previous match operation failed
+	 * 
+	 * @throws IllegalArgumentException
+	 *             If <code>validateGroup</code> is <code>true</code> and there is no capturing group in the pattern
+	 *             of the given group
+	 */
+	public boolean matched(String groupName, int occurrence, boolean validateGroup);
 
 	/**
 	 * Returns whether the previous match matched the empty string.
@@ -666,7 +875,7 @@ public interface MatchResult
 	 *             If no match has yet been attempted,
 	 *             or if the previous match operation failed
 	 */
-	public abstract boolean isEmpty();
+	public boolean isEmpty();
 
 	/**
 	 * Returns whether the specified group matched the empty string.
@@ -693,7 +902,7 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             with the given index
 	 */
-	public abstract boolean isEmpty(int group);
+	public boolean isEmpty(int group);
 
 	/**
 	 * Returns whether the specified <a href="Pattern.html#group">group</a>
@@ -716,7 +925,7 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public abstract boolean isEmpty(String group);
+	public boolean isEmpty(String group);
 
 	/**
 	 * Returns whether the specified <a href="Pattern.html#group">group</a>
@@ -751,14 +960,21 @@ public interface MatchResult
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public abstract boolean isEmpty(String groupName, int occurrence);
+	public boolean isEmpty(String groupName, int occurrence);
+
+	/**
+	 * Returns the pattern that is interpreted by this matcher.
+	 * 
+	 * @return The pattern for which this matcher was created
+	 */
+	public Pattern pattern();
 
 	/**
 	 * Returns the string being matched.
 	 * 
 	 * @return the string being matched
 	 */
-	public abstract String text();
+	public String text();
 
 	/**
 	 * Returns the group name (if any) for the specified group.
@@ -795,4 +1011,92 @@ public interface MatchResult
 	 *             been attempted, or if the previous match operation failed
 	 */
 	public String getGroupName(int group);
+
+	/**
+	 * @since 0.2
+	 */
+	// public Entry<Integer, String> getEntry(int group);
+
+	/**
+	 * @since 0.2
+	 */
+	public boolean treatNullAsEmptyString();
+
+	/**
+	 * @param key
+	 * @return
+	 * @since 0.2
+	 */
+	public boolean containsKey(Object key);
+
+	/**
+	 * @param value
+	 * @return
+	 * @since 0.2
+	 */
+	public boolean containsValue(Object value);
+
+	/**
+	 * @since 0.2
+	 * @return
+	 */
+	public Set<Entry<Integer, String>> entrySet();
+
+	/**
+	 * @param key
+	 * @return
+	 * @since 0.2
+	 */
+	public String get(Object key);
+
+	/**
+	 * @return
+	 * @since 0.2
+	 */
+	public Set<Integer> keySet();
+
+	/**
+	 * @return
+	 * @since 0.2
+	 */
+	public int size();
+
+	/**
+	 * @return
+	 * @since 0.2
+	 */
+	public List<String> values();
+
+	/* Groovy methods - makes RegExPlus groovier */
+
+	/**
+	 * Alias for {@link #matched()}.
+	 * 
+	 * <p>Coerces a Matcher instance to a boolean value, for use in Groovy truth</p>
+	 * 
+	 * @since 0.2
+	 */
+	public boolean asBoolean();
+
+	/**
+	 * Alias for {@link #group(int)}
+	 * 
+	 * <p>In Groovy, adds support the subscript operator, e.g. matcher[group], for a regex Matcher.</p>
+	 * 
+	 * @param group
+	 * @return
+	 * @since 0.2
+	 */
+	public Object getAt(int group);
+
+	/**
+	 * Alias for {@link #group(String)}
+	 * 
+	 * <p>In Groovy, adds support the subscript operator, e.g. matcher[group], for a regex Matcher.</p>
+	 * 
+	 * @param group
+	 * @return
+	 * @since 0.2
+	 */
+	public String getAt(String group);
 }

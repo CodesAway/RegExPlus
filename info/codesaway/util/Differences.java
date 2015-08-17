@@ -2,10 +2,8 @@ package info.codesaway.util;
 
 import info.codesaway.util.lcs.LcsString;
 
-import java.util.Stack;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Stack;
 
 /**
  * List of differences
@@ -68,6 +66,8 @@ public class Differences
 	 * @param newIndex
 	 *            the current index
 	 * @return original index (before changes were applied)
+	 * @throws IllegalArgumentException
+	 *             If the specified index was not in the original string
 	 */
 	public int getOriginalIndex(int newIndex)
 	{
@@ -146,8 +146,7 @@ public class Differences
 	 * <p>The replacement consists of the insertions and deletions required to
 	 * change the original string to the replacement string.</p>
 	 * 
-	 * <p>The differences are detected using the {@link LcsString#getDiff()}
-	 * method.</p>
+	 * <p>The differences are detected using the {@link LcsString#getDiff()} method.</p>
 	 * 
 	 * @param start
 	 *            initial position for the replacement
@@ -176,8 +175,7 @@ public class Differences
 	 * <p>The replacement consists of the insertions and deletions required to
 	 * change the original string to the replacement string.</p>
 	 * 
-	 * <p>The differences are detected using the {@link LcsString#getDiff0()}
-	 * method.</p>
+	 * <p>The differences are detected using the {@link LcsString#getDiff0()} method.</p>
 	 * 
 	 * @param start
 	 *            initial position for the replacement
@@ -195,8 +193,8 @@ public class Differences
 
 		int end = start + original.length();
 
-		changes.add(new ReplaceDifferencePlus(start, end, replacement,
-				seq.getDiff0()));
+		changes.add(new ReplaceDifferencePlus(start, end, replacement, seq
+				.getDiff0()));
 	}
 
 	/**
@@ -327,7 +325,8 @@ public class Differences
 
 	/**
 	 * Class to handle a replacement
-	 * 
+	 */
+	/*
 	 * <p>
 	 * Unlike {@link ReplaceDifference}, the replacement is the insertions and
 	 * deletions to change the original string to the replacement string.
@@ -402,6 +401,8 @@ public class Differences
 
 		/**
 		 * {@inheritDoc}
+		 * 
+		 * @throws IllegalArgumentException {@inheritDoc}
 		 */
 		@Override
 		protected int getOriginalIndexStep_Private(int currentIndex)
@@ -516,11 +517,13 @@ public class Differences
 		 *            the start index for the difference
 		 * @param end
 		 *            the end index for the difference
-		 * @param replacement
-		 *            the inserted string or replacement string
 		 */
 		// Difference(DifferenceOperation diffOp, int start, int end,
 		// String replacement)
+		/*
+		 * @param replacement
+		 * the inserted string or replacement string
+		 */
 		Difference(DifferenceOperation diffOp, int start, int end)
 		{
 			this.diffOp = diffOp;
@@ -610,6 +613,8 @@ public class Differences
 		 *            the current index
 		 * @return the offset by which this Difference affects the original
 		 *         index
+		 * @throws IllegalArgumentException
+		 *             If the specified index was not in the original string
 		 */
 		final int getOriginalIndexStep(int currentIndex)
 		{
@@ -627,6 +632,8 @@ public class Differences
 		 *            the current index
 		 * @return the offset by which this <code>Difference</code> affects the
 		 *         original index
+		 * @throws IllegalArgumentException
+		 *             If the specified index was not in the original string
 		 */
 		protected abstract int getOriginalIndexStep_Private(int currentIndex);
 	}

@@ -131,17 +131,17 @@ public class LcsString extends LongestCommonSubsequence<Character>
 //	}
 
 	/**
-	 * TODO: add Javadoc comments
+	 * add javadoc comments
 	 * 
 	 * @return a list of the differences
 	 */
-//	public List<String> getDiff()
-//	{
-//		return getDiff(diff());
-//	}
+	public List<String> getDiff()
+	{
+		return getDiff(diff());
+	}
 
 	/**
-	 * TODO: add Javadoc comments
+	 * add javadoc comments
 	 * @return a list of the differences
 	 */
 	public List<String> getDiff0()

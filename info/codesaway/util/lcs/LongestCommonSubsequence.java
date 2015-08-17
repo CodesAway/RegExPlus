@@ -1,6 +1,7 @@
 package info.codesaway.util.lcs;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static java.lang.Math.max;
@@ -31,15 +32,14 @@ public abstract class LongestCommonSubsequence<E>
 	 * The LCS table.
 	 * 
 	 * The <i>i</i>th row and <i>j</i>th column shows the length of the LCS
-	 * between
-	 * X<sub>1..<i>i</i></sub> and Y<sub>1..<i>j</i></sub>.
+	 * between X<sub>1..<i>i</i></sub> and Y<sub>1..<i>j</i></sub>.
 	 */
 	private int[][] lcsTable;
 
 	/**
 	 * Cached list, as returned by {@link #diff()}.
 	 */
-//	private List<DiffEntry<E>> diff;
+	private List<DiffEntry<E>> diff;
 
 	/**
 	 * Cached list, as returned by {@link #diff0}
@@ -252,59 +252,59 @@ public abstract class LongestCommonSubsequence<E>
 //	}
 
 	/**
-	 * TODO: add java doc comments
+	 * add javadoc comments
 	 * 
 	 * @return a list of the differences
 	 */
-//	public List<DiffEntry<E>> diff()
-//	{
-//		calculateLcs();
-//
-//		if (this.diff == null) {
-//			this.diff = new ArrayList<DiffEntry<E>>();
-//			diff(lengthOfBefore(), lengthOfAfter());
-//		}
-//		return this.diff;
-//	}
+	public List<DiffEntry<E>> diff()
+	{
+		calculateLcs();
+
+		if (this.diff == null) {
+			this.diff = new ArrayList<DiffEntry<E>>();
+			diff(lengthOfBefore(), lengthOfAfter());
+		}
+		return this.diff;
+	}
 
 	/**
-	 * TODO: add javadoc comments
+	 * add javadoc comments
 	 * 
 	 * @param i
 	 *            the 1-based position in X
 	 * @param j
 	 *            the 1-based position in Y
 	 */
-//	private void diff(int i, int j)
-//	{
-//		while (!(i == 0 && j == 0)) {
-//			if (i > 0 && j > 0 && isXYEqual(i, j)) {
-//				this.diff.add(new DiffEntry<E>(DiffType.NONE,
-//						valueOfXInternal(i)));
-//				i--;
-//				j--;
-//
-//			} else if (j > 0
-//					&& (i == 0 || lcsTable[i][j - 1] >= lcsTable[i - 1][j])) {
-//				this.diff.add(new DiffEntry<E>(DiffType.ADD,
-//						valueOfYInternal(j)));
-//				j--;
-//
-//			} else if (i > 0
-//					&& (j == 0 || lcsTable[i][j - 1] < lcsTable[i - 1][j])) {
-//
-//				this.diff.add(new DiffEntry<E>(DiffType.REMOVE,
-//						valueOfXInternal(i)));
-//				i--;
-//			}
-//
-//		}
-//
-//		Collections.reverse(this.diff);
-//	}
+	private void diff(int i, int j)
+	{
+		while (!(i == 0 && j == 0)) {
+			if (i > 0 && j > 0 && isXYEqual(i, j)) {
+				this.diff.add(new DiffEntry<E>(DiffType.NONE,
+						valueOfXInternal(i)));
+				i--;
+				j--;
+
+			} else if (j > 0
+					&& (i == 0 || lcsTable[i][j - 1] >= lcsTable[i - 1][j])) {
+				this.diff.add(new DiffEntry<E>(DiffType.ADD,
+						valueOfYInternal(j)));
+				j--;
+
+			} else if (i > 0
+					&& (j == 0 || lcsTable[i][j - 1] < lcsTable[i - 1][j])) {
+
+				this.diff.add(new DiffEntry<E>(DiffType.REMOVE,
+						valueOfXInternal(i)));
+				i--;
+			}
+
+		}
+
+		Collections.reverse(this.diff);
+	}
 
 	/**
-	 * TODO: add javadoc comments
+	 * add javadoc comments
 	 * @return a list of the differences
 	 */
 	public List<DiffEntry<E>> diff0()
@@ -319,7 +319,7 @@ public abstract class LongestCommonSubsequence<E>
 	}
 
 	/**
-	 * TODO: add javadoc comments
+	 * add javadoc comments
 	 * 
 	 * @param i
 	 *            the 1-based position in X

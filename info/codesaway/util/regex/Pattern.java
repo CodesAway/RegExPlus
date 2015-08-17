@@ -1,30 +1,32 @@
 // TODO: verify group names consisting of solely numbers are handled correctly
+/*
+ * TODO: need to throw correct exception for cases:
+ * 1) Integer values too high
+ * 2) Illegal integer values
+ */
 
 package info.codesaway.util.regex;
 
-import static info.codesaway.util.regex.Pattern.PatternErrorMessage.*;
-import static info.codesaway.util.regex.Pattern.RefactorUtility.afterRefactor;
-import static info.codesaway.util.regex.Pattern.RefactorUtility.digitCount;
-import static info.codesaway.util.regex.Pattern.RefactorUtility.getDigitCountPattern;
-import static info.codesaway.util.regex.Pattern.RefactorUtility.getRefactorPattern;
-import static info.codesaway.util.regex.Pattern.RefactorUtility.hexCodeFormat;
-import static info.codesaway.util.regex.Pattern.RefactorUtility.perl_octal;
-import static info.codesaway.util.regex.Pattern.RefactorUtility.posixClasses;
-import static info.codesaway.util.regex.Pattern.RefactorUtility.preRefactor;
-import static info.codesaway.util.regex.Pattern.RefactorUtility.unicodeFormat;
+import static info.codesaway.util.regex.Matcher.getAbsoluteGroupIndex;
+import static info.codesaway.util.regex.Matcher.noNamedGroup;
+import static info.codesaway.util.regex.RefactorUtility.fullGroupName;
+import static info.codesaway.util.regex.RefactorUtility.parseInt;
+import static info.codesaway.util.regex.RegExPlusSupport.setLastMatcher;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Stack;
 import java.util.HashMap;
-import java.util.Locale;
+import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
-import java.util.TreeSet;
 import java.util.Map.Entry;
+import java.util.Set;
 
-import info.codesaway.util.Differences;
+// TODO: finish documenting
+// mention that all compiled patterns are now cached
 
 /**
  * A compiled representation of a regular expression.
@@ -35,8 +37,7 @@ import info.codesaway.util.Differences;
  * 
  * <p>A regular expression, specified as a string, must first be compiled into
  * an instance of this class. The resulting pattern can then be used to create
- * a {@link Matcher} object that can match arbitrary
- * {@linkplain java.lang.CharSequence character sequences} against the
+ * a {@link Matcher} object that can match arbitrary {@linkplain java.lang.CharSequence character sequences} against the
  * regular
  * expression. All of the state involved in performing a match resides in the
  * matcher, so many matchers can share the same pattern.
@@ -469,7 +470,7 @@ import info.codesaway.util.Differences;
  * <tr>
  * <td valign="top" headers="construct bounds"><tt>\Z</tt></td>
  * <td headers="matches">The end of the input but for the final
- * <a href="#lt"terminator</a>, if&nbsp;any</td>
+ * <a href="#lt">terminator</a>, if&nbsp;any</td>
  * </tr>
  * <tr>
  * <td valign="top" headers="construct bounds"><tt>\z</tt></td>
@@ -737,19 +738,17 @@ import info.codesaway.util.Differences;
  * <tr>
  * <td valign="top" headers="construct special">
  * <tt>(?idmsuxJn-idmsuxJn)&nbsp;</tt></td>
- * <td headers="matches">Nothing, but turns match flags
- * {@link #CASE_INSENSITIVE i} {@link #UNIX_LINES d} {@link #MULTILINE m}
- * {@link #DOTALL s} {@link #UNICODE_CASE u} {@link #COMMENTS x}
- * {@link #DUPLICATE_NAMES J} {@link #EXPLICIT_CAPTURE n} on - off</td>
+ * <td headers="matches">Nothing, but turns match flags {@link #CASE_INSENSITIVE i} {@link #UNIX_LINES d}
+ * {@link #MULTILINE m} {@link #DOTALL s} {@link #UNICODE_CASE u} {@link #COMMENTS x} {@link #DUPLICATE_NAMES J}
+ * {@link #EXPLICIT_CAPTURE n} on - off</td>
  * </tr>
  * <tr>
  * <td valign="top"
  * headers="construct special"><tt>(?idmsuxJn-idmsuxJn:</tt><i
  * >X</i><tt>)</tt>&nbsp;&nbsp;</td>
  * <td headers="matches"><i>X</i>, as a <a href="#cg">non-capturing group</a>
- * with the given flags {@link #CASE_INSENSITIVE i} {@link #UNIX_LINES d}
- * {@link #MULTILINE m} {@link #DOTALL s} {@link #UNICODE_CASE u}
- * {@link #COMMENTS x} {@link #DUPLICATE_NAMES J} {@link #EXPLICIT_CAPTURE n} on
+ * with the given flags {@link #CASE_INSENSITIVE i} {@link #UNIX_LINES d} {@link #MULTILINE m} {@link #DOTALL s}
+ * {@link #UNICODE_CASE u} {@link #COMMENTS x} {@link #DUPLICATE_NAMES J} {@link #EXPLICIT_CAPTURE n} on
  * - off</td>
  * </tr>
  * <tr>
@@ -1088,8 +1087,8 @@ import info.codesaway.util.Differences;
  * <p><b>Note</b>: by default, capture group names must be unique, and if
  * multiple groups
  * with the same name exist,
- * a {@link PatternSyntaxException} is thrown. By setting the
- * {@link #DUPLICATE_NAMES} flag, multiple capture groups with
+ * a {@link PatternSyntaxException} is thrown. By setting the {@link #DUPLICATE_NAMES} flag, multiple capture groups
+ * with
  * the same name are allowed.</p>
  * 
  * <a name="group">
@@ -1229,13 +1228,11 @@ import info.codesaway.util.Differences;
  * 
  * <p>The supported categories are those of
  * <a href="http://www.unicode.org/unicode/standard/standard.html">
- * <i>The Unicode Standard</i></a> in the version specified by the
- * {@link java.lang.Character Character} class. The category names are those
+ * <i>The Unicode Standard</i></a> in the version specified by the {@link java.lang.Character Character} class. The
+ * category names are those
  * defined in the Standard, both normative and informative.
  * The block names supported by <code>Pattern</code> are the valid block names
- * accepted and defined by
- * {@link java.lang.Character.UnicodeBlock#forName(String) UnicodeBlock.forName}
- * .</p>
+ * accepted and defined by {@link java.lang.Character.UnicodeBlock#forName(String) UnicodeBlock.forName} .</p>
  * 
  * <a name="jcc"> <p>Categories that behave like the java.lang.Character
  * boolean is<i>methodname</i> methods (except for the deprecated ones) are
@@ -1296,8 +1293,8 @@ import info.codesaway.util.Differences;
  * 
  * <li><p>Perl uses the <tt>g</tt> flag to request a match that resumes
  * where the last match left off. This functionality is provided implicitly
- * by the {@link Matcher} class: Repeated invocations of the
- * {@link Matcher#find find} method will resume where the last match left off,
+ * by the {@link Matcher} class: Repeated invocations of the {@link Matcher#find find} method will resume where the last
+ * match left off,
  * unless the matcher is reset.</p></li>
  * 
  * <li><p>In Perl, embedded flags at the top level of an expression affect
@@ -1310,8 +1307,7 @@ import info.codesaway.util.Differences;
  * expression <tt>*a</tt>, as well as dangling brackets, as in the
  * expression <tt>abc]</tt>, and treats them as literals. This
  * class also accepts dangling brackets but is strict about dangling
- * metacharacters like +, ? and *, and will throw a
- * {@link PatternSyntaxException} if it encounters them.</p></li>
+ * metacharacters like +, ? and *, and will throw a {@link PatternSyntaxException} if it encounters them.</p></li>
  * 
  * </ul>
  * 
@@ -1365,7 +1361,7 @@ import info.codesaway.util.Differences;
  * <code>(?Z16U[0..ff])</code>, for example, will match "AA", but not "aa". Note
  * that regardless of this setting, in the pattern, either upper-case or
  * lower-case digits may be used. For bases 10 or less, this setting
- * has no effect, but, for consistency, can be specified - the regex
+ * has no effect, but, for consistency, can be specified - for example, the regex
  * <code>(?Z8U[0..377])</code> is equivalent to <code>(?Z8[0..377])</code>.</p>
  * 
  * @see Pattern#split(CharSequence, String, int)
@@ -1518,6 +1514,9 @@ public final class Pattern implements Serializable
 	 * <p>If this flag is set, a {@link PatternSyntaxException} will be thrown
 	 * if the pattern contains a reference to a non-existent group, whereas, by
 	 * default, no exception would be thrown.</p>
+	 * 
+	 * <p>Verification of groups can also be enabled via the embedded flag
+	 * expression <code>(?v)</code>.</p>
 	 */
 	public static final int VERIFY_GROUPS = 0x40000000;
 
@@ -1529,6 +1528,9 @@ public final class Pattern implements Serializable
 	 * occurred at the current point in the pattern. Otherwise, up to the first
 	 * three (octal) digits are used to form an octal code, and any additional
 	 * trailing digits will be treated literally.</p>
+	 * 
+	 * <p>Using Perl's octal syntax can also be enabled via the embedded flag
+	 * expression <code>(?o)</code>.</p>
 	 */
 	public static final int PERL_OCTAL = 0x20000000;
 
@@ -1588,6 +1590,7 @@ public final class Pattern implements Serializable
 	 * 
 	 * </table></blockquote>
 	 */
+	// TODO: check about having inline modifier (doubtful)
 	public static final int DOTNET_NUMBERING = 0x10000000;
 
 	/**
@@ -1623,15 +1626,16 @@ public final class Pattern implements Serializable
 	private transient java.util.regex.Pattern internalPattern;
 
 	/** The pattern */
-	private String pattern;
+	private final String pattern;
 
 	/** The flags. */
-	private int flags;
+	private final int flags;
 
 	/**
 	 * Boolean indicating this Pattern is compiled; this is necessary in order
 	 * to lazily compile deserialized Patterns.
 	 */
+	// TODO: learn about Serialization and test Class for correctness
 	private transient volatile boolean compiled = false;
 
 	/**
@@ -1644,6 +1648,14 @@ public final class Pattern implements Serializable
 	private transient int capturingGroupCount;
 
 	/**
+	 * Indicates whether groups were added when creating the internal pattern.
+	 * 
+	 * <p><b>Note</b>: Some refactorings add capture groups (e.g. "branch reset" subpattern, which are invisible to
+	 * outside users, except when using the internal pattern to create a matcher
+	 */
+	private transient boolean addedGroups;
+
+	/**
 	 * A map with mappings from a "mapping name" to the actual group number in
 	 * the internal pattern.
 	 * 
@@ -1652,56 +1664,131 @@ public final class Pattern implements Serializable
 	private transient Map<String, Integer> groupMapping;
 
 	/**
-	 * A map with mappings from the group name to the number of occurrences of
+	 * A map with mappings from the group name to the group count for
 	 * the group.
 	 */
-	private transient Map<String, Integer> groupNameOccurrences;
+	private transient Map<String, Integer> groupCounts;
 
 	/**
-	 * Pattern used to escape metacharacters.
+	 * @since 0.2
 	 */
-	// TODO: javascript needs to escape ']'
-	// escapes '#' (in case Pattern.COMMENTS is enabled)
-	static final java.util.regex.Pattern escapeMetachars = java.util.regex.Pattern
-			.compile("[\\\\.*?+\\[{|()^$#]");
+	// TODO: update cache to detect common pattern which are equivalent ??
+	// e.g. "(?i)abc" = "abc" with Case-insensitive flag
+	private static final Map<PatternCacheKey, Pattern> patternCache = new Hashtable<PatternCacheKey, Pattern>();
 
 	/**
-	 * Pattern used to escape metacharacters found in a character class.
+	 * A pattern with the RegEx being the empty string
 	 */
-	// TODO: java needs to escape '[' in char class
-	// escapes '#' (in case Pattern.COMMENTS is enabled)
-	static final java.util.regex.Pattern escapeClassMetachars = java.util.regex.Pattern
-			.compile("[\\^\\-\\[\\\\#]");
+	// public static final Pattern EMPTY_PATTERN = Pattern.compile("");
 
 	/**
-	 * Used to differentiate between named and unnamed capture groups, back
-	 * references, etc. during refactoring. Different steps may be taken
-	 * depending if a name or number is used.
+	 * A compiled Java pattern with the RegEx being the empty string.
 	 */
-	private static final boolean FOR_NAME = true;
-
-	/** Used to specify that the operation occurred during the prerefactor step. */
-	private static final boolean DURING_PREREFACTOR = true;
-
-	/** Used as the mapped index for a group whose target is unknown. */
-	static final int TARGET_UNKNOWN = -1;
+	static final java.util.regex.Pattern JAVA_EMPTY_PATTERN = java.util.regex.Pattern.compile("");
 
 	/**
-	 * A compiled pattern with the RegEx being the empty string.
+	 * Whether to use lazy compiling or to compile on creation (default, how Java patterns are done)
+	 * 
+	 * <p><b>Note</b>: changing this setting will not affect <code>Pattern</code>s that are already created. To
+	 * force a Pattern to compile, call the {@link #forceCompile()} method.</p>
 	 */
-	static final java.util.regex.Pattern EMPTY_PATTERN = java.util.regex.Pattern
-			.compile("");
+	public static boolean lazyCompiling = false;
 
 	/**
-	 * Pattern used with the
-	 * {@link #naturalCompareTo(CharSequence, CharSequence)} function
+	 * Pattern used with the {@link #naturalCompareTo(CharSequence, CharSequence)} function
 	 * to provide a natural sort
 	 */
 	private static final java.util.regex.Pattern naturalSort = java.util.regex.Pattern
 			.compile("\\G(?:(\\D++)|0*(\\d++)|$)");
 
+	/** The natural comparator - lazily initialized when calling {@link #getNaturalComparator()}. */
+	private static volatile Comparator<String> naturalComparator;
+
 	/**
-	 * Compiles the given regular expression into a pattern. </p>
+	 * Returns a comparator which sorts using {@link #naturalCompareTo(CharSequence, CharSequence)}, to treat embedded
+	 * numbers as numbers, instead of comparing them lexicographically.
+	 * 
+	 * <p><b>NOTE</b>: This comparator is case-sensitive, mimicking String comparisons.</p>
+	 * 
+	 * @return the natural comparator
+	 * @since 0.2
+	 */
+	public static Comparator<String> getNaturalComparator()
+	{
+		if (naturalComparator == null) {
+			synchronized (Pattern.class) {
+				if (naturalComparator == null) {
+					naturalComparator = new Comparator<String>() {
+
+						@Override
+						public int compare(String o1, String o2)
+						{
+							return naturalCompareTo(o1, o2);
+						}
+					};
+				}
+			}
+		}
+
+		return naturalComparator;
+	}
+
+	private static class PatternCacheKey
+	{
+		private final String regex;
+		private final int flags;
+
+		public PatternCacheKey(String regex, int flags)
+		{
+			this.regex = regex;
+			this.flags = flags;
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public int hashCode()
+		{
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + flags;
+			result = prime * result + ((regex == null) ? 0 : regex.hashCode());
+			return result;
+		}
+
+		/**
+		 * {@inheritDoc}
+		 */
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			PatternCacheKey other = (PatternCacheKey) obj;
+			if (flags != other.flags)
+				return false;
+			if (regex == null) {
+				if (other.regex != null)
+					return false;
+			} else if (!regex.equals(other.regex))
+				return false;
+			return true;
+		}
+
+		@Override
+		public String toString()
+		{
+			return flags + ": " + regex;
+		}
+	}
+
+	/**
+	 * Compiles the given regular expression into a pattern.
 	 * 
 	 * @param regex
 	 *            The expression to be compiled
@@ -1712,25 +1799,54 @@ public final class Pattern implements Serializable
 	 */
 	public static Pattern compile(String regex)
 	{
-		return new Pattern(regex, 0);
+		return compile(regex, 0);
 	}
 
 	/**
 	 * Compiles the given regular expression into a pattern with the given
-	 * flags. </p>
+	 * flags.
 	 * 
 	 * @param regex
 	 *            The expression to be compiled
 	 * 
 	 * @param flags
-	 *            Match flags, a bit mask that may include
-	 *            {@link #CASE_INSENSITIVE}, {@link #MULTILINE},&nbsp;
-	 *            {@link #DOTALL}, {@link #UNICODE_CASE}, {@link #CANON_EQ},
-	 *            {@link #UNIX_LINES}, {@link #LITERAL}, {@link #COMMENTS},
+	 *            the flags
 	 * 
-	 *            <p>{@link #DUPLICATE_NAMES}, {@link #VERIFY_GROUPS},
-	 *            {@link #PERL_OCTAL}, {@link #DOTNET_NUMBERING}, and
-	 *            {@link #EXPLICIT_CAPTURE}</p>
+	 * @return The compiled <code>Pattern</code>
+	 * 
+	 * @throws PatternSyntaxException
+	 *             If the expression's patternSyntax is invalid
+	 */
+	public static Pattern compile(String regex, PatternOptions... flags)
+	{
+		return compile(regex, new PatternFlags(flags).intValue());
+	}
+
+	public static Pattern compile(String regex, int... flags)
+	{
+		int flagsTotal = 0;
+
+		for (int flag : flags) {
+			flagsTotal |= flag;
+		}
+
+		return compile(regex, flagsTotal);
+	}
+
+	/**
+	 * Compiles the given regular expression into a pattern with the given
+	 * flags.
+	 * 
+	 * @param regex
+	 *            The expression to be compiled
+	 * 
+	 * @param flags
+	 *            Match flags, a bit mask that may include {@link #CASE_INSENSITIVE}, {@link #MULTILINE},&nbsp;
+	 *            {@link #DOTALL}, {@link #UNICODE_CASE}, {@link #CANON_EQ}, {@link #UNIX_LINES}, {@link #LITERAL},
+	 *            {@link #COMMENTS},
+	 * 
+	 *            <p>{@link #DUPLICATE_NAMES}, {@link #VERIFY_GROUPS}, {@link #PERL_OCTAL}, {@link #DOTNET_NUMBERING},
+	 *            and {@link #EXPLICIT_CAPTURE}</p>
 	 * 
 	 * @return The compiled <code>Pattern</code>
 	 * 
@@ -1743,18 +1859,106 @@ public final class Pattern implements Serializable
 	 */
 	public static Pattern compile(String regex, int flags)
 	{
-		return new Pattern(regex, flags);
+		return compile(regex, flags, lazyCompiling);
+	}
+
+	static Pattern lazyCompile(String regex)
+	{
+		return lazyCompile(regex, 0);
+	}
+
+	private static Pattern lazyCompile(String regex, int flags)
+	{
+		return compile(regex, flags, true);
+	}
+
+	public static Pattern compile(String regex, int flags, boolean lazyCompiling)
+	{
+		PatternCacheKey key = new PatternCacheKey(regex, flags);
+
+		Pattern cachedPattern = patternCache.get(key);
+
+		if (cachedPattern != null)
+			return cachedPattern;
+
+		synchronized (patternCache) {
+			// System.out.println("Caching (" + flags + "): " + regex);
+			cachedPattern = patternCache.get(key);
+
+			if (cachedPattern != null)
+				return cachedPattern;
+		}
+
+		Pattern newPattern = new Pattern(regex, flags, lazyCompiling);
+
+		synchronized (patternCache) {
+			patternCache.put(key, newPattern);
+		}
+
+		return newPattern;
 	}
 
 	/**
-	 * Gets the internal pattern.
+	 * 
+	 * @param pattern
+	 * @return
+	 * @since 0.2
+	 */
+	public static Pattern valueOf(java.util.regex.Pattern pattern)
+	{
+		PatternCacheKey key = new PatternCacheKey(pattern.pattern(), pattern.flags());
+		Pattern cachedPattern = patternCache.get(key);
+
+		if (cachedPattern != null)
+			return cachedPattern;
+
+		synchronized (patternCache) {
+			cachedPattern = patternCache.get(key);
+
+			if (cachedPattern != null)
+				return cachedPattern;
+
+			Pattern newPattern = new Pattern(pattern);
+			patternCache.put(key, newPattern);
+
+			return newPattern;
+		}
+	}
+
+	/**
+	 * Forces this <code>Pattern</code> to compile.
+	 * 
+	 * <p>If the pattern has already been compiled, then this method returns immediately. Otherwise, the pattern is
+	 * compiled.</p>
+	 * 
+	 * <p>Starting with version 0.2 of RegExPlus, patterns can be lazily compiled (compiled when needed) by
+	 * setting the {@link #lazyCompiling} static field to <code>true</code>. Calling this method forces these lazily
+	 * compiled patterns to compile.
+	 * 
+	 * @since 0.2
+	 */
+	public Pattern forceCompile()
+	{
+		if (!compiled) {
+			synchronized (this) {
+				if (!compiled)
+					compile();
+			}
+		}
+
+		return this;
+	}
+
+	/**
+	 * Gets the internal pattern
 	 * 
 	 * @return The internal {@link java.util.regex.Pattern} used by this
 	 *         pattern.
 	 */
-	java.util.regex.Pattern getInternalPattern()
+	public java.util.regex.Pattern getInternalPattern()
 	{
-		return this.internalPattern;
+		forceCompile();
+		return internalPattern;
 	}
 
 	/**
@@ -1763,9 +1967,9 @@ public final class Pattern implements Serializable
 	 * 
 	 * @return The source of the internal pattern
 	 */
-	String internalPattern()
+	public String internalPattern()
 	{
-		return this.getInternalPattern().pattern();
+		return getInternalPattern().pattern();
 	}
 
 	/**
@@ -1779,7 +1983,45 @@ public final class Pattern implements Serializable
 	}
 
 	/**
-	 * Returns the number of capturing groups in this matcher's pattern.
+	 * Indicates whether additional capture groups were added to the internal pattern when refactoring the compiled
+	 * regular expression.
+	 * 
+	 * @return
+	 * @since 0.2
+	 */
+	public boolean addedGroups()
+	{
+		forceCompile();
+		return addedGroups;
+	}
+
+	public List<String> getGroupNames()
+	{
+		List<String> groupNames = new ArrayList<String>();
+
+		for (Entry<String, Integer> groupEntry : groupCounts.entrySet())
+		{
+			String groupName = groupEntry.getKey();
+			int occurrences = groupEntry.getValue();
+
+			if (occurrences == 1)
+			{
+				groupNames.add(groupName);
+			}
+			else
+			{
+				for (int i = 1; i <= occurrences; i++)
+				{
+					groupNames.add(groupName + "[" + i + "]");
+				}
+			}
+		}
+
+		return Collections.unmodifiableList(groupNames);
+	}
+
+	/**
+	 * Returns the number of capturing groups in this pattern.
 	 * 
 	 * <p>Group zero denotes the entire pattern by convention. It is not
 	 * included in this count.</p>
@@ -1792,23 +2034,71 @@ public final class Pattern implements Serializable
 	 */
 	public int groupCount()
 	{
+		forceCompile();
 		return this.capturingGroupCount;
 	}
 
 	/**
-	 * Sets the number of capture groups.
+	 * Returns the number of capturing groups (with the given group index) in
+	 * this pattern.
 	 * 
-	 * @param capturingGroupCount
-	 *            the number of capture groups
+	 * <p><b>Note</b>: in most cases, this return will be 1 - the only exception
+	 * is in the case
+	 * of a "branch reset" pattern, where there may be multiple groups with the
+	 * same group index.
+	 * 
+	 * <p>For example, </p>
+	 * <blockquote><pre><code><span style="color: green"
+	 * >// Outputs 2, since there are two groups <!--
+	 * -->that have the group index of 1</span>
+	 * System.out.println(Pattern.compile("(?|(1a)|(1b))").groupCount(1));</code
+	 * ></pre>
+	 * </blockquote>
+	 * 
+	 * <p>Group zero denotes the entire pattern by convention. It is not
+	 * included in this count.</p>
+	 * 
+	 * <p>Any non-negative integer smaller than or equal to the value returned
+	 * by this method is guaranteed to be a valid occurrence (for a <a
+	 * href="#group">group</a>,
+	 * <i>groupName</i><tt>[</tt><i>occurrence</i><tt>]</tt>) for this
+	 * matcher.</p>
+	 * 
+	 * <p><b>Note</b>: unlike other methods, this
+	 * method doesn't throw an exception if the specified group doesn't exist.
+	 * Instead, zero is returned, since the number of groups with the
+	 * (non-existent) group name is zero.
+	 * 
+	 * @param group
+	 *            The group index for a capturing group in this matcher's
+	 *            pattern
+	 * 
+	 * @return The number of capturing groups (with the given group index) in
+	 *         this matcher's pattern
+	 * @since 0.2
 	 */
-	void setCapturingGroupCount(int capturingGroupCount)
+	public int groupCount(int group)
 	{
-		this.capturingGroupCount = capturingGroupCount;
+		String groupName;
+
+		try {
+			int index = getAbsoluteGroupIndex(group, groupCount());
+			groupName = wrapIndex(index);
+		} catch (IndexOutOfBoundsException e) {
+			return 0;
+		} catch (IllegalArgumentException e) {
+			return 0;
+		}
+
+		Integer groupCount = groupCounts.get(groupName);
+		return groupCount != null ? groupCount : 0;
+
+		// return groupCount(wrapIndex(group));
 	}
 
 	/**
 	 * Returns the number of capturing groups (with the given group name) in
-	 * this matcher's pattern.
+	 * this pattern.
 	 * 
 	 * <p>Group zero denotes the entire pattern by convention. It is not
 	 * included in this count.</p>
@@ -1835,12 +2125,102 @@ public final class Pattern implements Serializable
 	 */
 	public int groupCount(String groupName)
 	{
-		Integer occurrences = groupNameOccurrences.get(groupName);
+		forceCompile();
 
-		if (occurrences == null)
+		try {
+			groupName = normalizeGroupName(groupName);
+		} catch (IllegalArgumentException e) {
+			/*
+			 * groupName is a relative unnamed group (e.g.
+			 * "[-4]"), which doesn't exist, or an unnamed group whose index is
+			 * not a parsable integer (e.g. "[a]")
+			 */
+
+			// Illegal group means the group count is 0
+			// TODO: if not parsable int, throw exception
 			return 0;
+		}
 
-		return occurrences;
+		Integer groupCount = groupCounts.get(groupName);
+		return groupCount != null ? groupCount : 0;
+	}
+
+	/**
+	 * Indicates whether this pattern has any capturing groups.
+	 * 
+	 * @return <code>true</code> if this pattern has at least one capturing group; otherwise, <code>false</code>
+	 * 
+	 * @since 0.2
+	 */
+	public boolean hasGroup()
+	{
+		return groupCount() > 0;
+	}
+
+	/**
+	 * Indicates whether this pattern contains the specified group.
+	 * 
+	 * @param group
+	 *            The group index for a capturing group in this pattern
+	 * @return <code>true</code> if this pattern contains the specified group; otherwise, <code>false</code>.
+	 * 
+	 * @since 0.2
+	 */
+	public boolean hasGroup(int group)
+	{
+		return groupCount(group) > 0;
+	}
+
+	/**
+	 * Indicates whether this pattern contains the specified group.
+	 * 
+	 * @param group
+	 *            A capturing group in this pattern
+	 * @return <code>true</code> if this pattern contains the specified group; otherwise, <code>false</code>.
+	 * 
+	 * @since 0.2
+	 */
+	public boolean hasGroup(String group)
+	{
+		// TODO: parse out group name and occurrence and pass to hasGroup(groupName, occurrence)
+		java.util.regex.Matcher matcher = fullGroupName.matcher(group);
+
+		if (!matcher.matches())
+			return false;
+
+		String groupName = matcher.group(1);
+		String groupOccurrence = matcher.group(2);
+		int occurrence = groupOccurrence != null ? parseInt(groupOccurrence) : 0;
+
+		return hasGroup(groupName, occurrence);
+		// return containsKey(group);
+	}
+
+	/**
+	 * Indicates whether this matcher contains the specified group.
+	 * 
+	 * @param groupName
+	 *            The group name for a capturing group in this matcher's pattern
+	 * 
+	 * @param occurrence
+	 *            The occurrence of the specified group name
+	 * @return <code>true</code> if this matcher contains the specified group; otherwise, <code>false</code>.
+	 * 
+	 * @since 0.2
+	 */
+	public boolean hasGroup(String groupName, int occurrence)
+	{
+		int groupCount = groupCount(groupName);
+
+		if (groupCount == 0)
+			return false;
+
+		try {
+			getAbsoluteGroupIndex(occurrence, groupCount);
+			return true;
+		} catch (IndexOutOfBoundsException e) {
+			return false;
+		}
 	}
 
 	/**
@@ -1851,17 +2231,6 @@ public final class Pattern implements Serializable
 	Map<String, Integer> getGroupMapping()
 	{
 		return this.groupMapping;
-	}
-
-	/**
-	 * Sets the group name occurrences.
-	 * 
-	 * @param groupNameOccurrences
-	 *            the group name occurrences
-	 */
-	void setGroupNameOccurrences(Map<String, Integer> groupNameOccurrences)
-	{
-		this.groupNameOccurrences = groupNameOccurrences;
 	}
 
 	/**
@@ -1887,13 +2256,7 @@ public final class Pattern implements Serializable
 	 */
 	public Matcher matcher(CharSequence input)
 	{
-		if (!compiled) {
-			synchronized (this) {
-				if (!compiled)
-					compile();
-			}
-		}
-
+		forceCompile();
 		return new Matcher(internalPattern.matcher(input), this, input);
 	}
 
@@ -1911,29 +2274,29 @@ public final class Pattern implements Serializable
 	 * <p>For example, given the following pattern to match a decimal number
 	 * 
 	 * <blockquote><pre>
-	 *Pattern p = Pattern.compile("\\d+\\.\\d+");</pre></blockquote>
+	 * Pattern p = Pattern.compile("\\d+\\.\\d+");</pre></blockquote>
 	 * 
 	 * The following calls return <code>true</code>
 	 * 
 	 * <blockquote><pre>
-	 *p.isPartialMatch("");
-	 *p.isPartialMatch("1");
-	 *p.isPartialMatch("2");
-	 *p.isPartialMatch("9");
-	 *p.isPartialMatch("123");
-	 *p.isPartialMatch("123.");
-	 *p.isPartialMatch("123.456");
-	 *<span style="color: #008000;">// p.matcher("123.456").matches() <span
-	 *>would also return true (see note below)</span></span></pre></blockquote>
+	 * p.isPartialMatch("");
+	 * p.isPartialMatch("1");
+	 * p.isPartialMatch("2");
+	 * p.isPartialMatch("9");
+	 * p.isPartialMatch("123");
+	 * p.isPartialMatch("123.");
+	 * p.isPartialMatch("123.456");
+	 * <span style="color: green;">// p.matcher("123.456").matches() <span
+	 * >would also return true (see note below)</span></span></pre></blockquote>
 	 * 
 	 * Whereas these calls return <code>false</code>
 	 * 
 	 * <blockquote><pre>
-	 *p.isPartialMatch("a");
-	 *p.isPartialMatch(".");
-	 *p.isPartialMatch(".4");
-	 *p.isPartialMatch(".45");
-	 *p.isPartialMatch(".456");</pre></blockquote>
+	 * p.isPartialMatch("a");
+	 * p.isPartialMatch(".");
+	 * p.isPartialMatch(".4");
+	 * p.isPartialMatch(".45");
+	 * p.isPartialMatch(".456");</pre></blockquote>
 	 * 
 	 * <p><b id="isPartialMatch(java.lang.CharSequence)_note">Note</b>: if the
 	 * given input would match the pattern, this method
@@ -1953,7 +2316,7 @@ public final class Pattern implements Serializable
 	 */
 	public boolean isPartialMatch(CharSequence input)
 	{
-		Matcher m = this.matcher(input);
+		Matcher m = setLastMatcher(matcher(input));
 
 		if (m.matches()) {
 			return true;
@@ -1970,6 +2333,144 @@ public final class Pattern implements Serializable
 	public int flags()
 	{
 		return this.flags;
+	}
+
+	/**
+	 * @return
+	 * @since 0.2
+	 */
+	public PatternFlags getFlags()
+	{
+		return new PatternFlags(flags());
+	}
+
+	/**
+	 * @param pattern
+	 * @return
+	 */
+	public static Pattern normalize(java.util.regex.Pattern pattern)
+	{
+		int flags = pattern.flags();
+
+		if (flags == 0) {
+			// return this;
+
+			// Done this way to allow lazy compiling, since normalized forms aren't used for matchers (in my code)
+			// Could instead use new Pattern(pattern), same end result
+			// TODO: instead make valueOf method lazily compilable
+			return lazyCompile(pattern.pattern());
+		}
+
+		/* Inline modifiers */
+		String unixLines = (flags & UNIX_LINES) != 0 ? "d" : "";
+		String caseInsensitive = (flags & CASE_INSENSITIVE) != 0 ? "i" : "";
+		String comments = (flags & COMMENTS) != 0 ? "x" : "";
+		String multiline = (flags & MULTILINE) != 0 ? "m" : "";
+		String dotall = (flags & DOTALL) != 0 ? "s" : "";
+		String unicodeCase = (flags & UNICODE_CASE) != 0 ? "u" : "";
+		String duplicateNames = (flags & DUPLICATE_NAMES) != 0 ? "J" : "";
+		String explicitCapture = (flags & EXPLICIT_CAPTURE) != 0 ? "n" : "";
+		String perlOctal = (flags & PERL_OCTAL) != 0 ? "o" : "";
+		String verifyGroups = (flags & VERIFY_GROUPS) != 0 ? "v" : "";
+
+		/* No inline modifier */
+		int canonEq = (flags & CANON_EQ) != 0 ? CANON_EQ : 0;
+		// int verifyGroups = has(VERIFY_GROUPS) ? VERIFY_GROUPS : 0;
+		// int perlOctal = has(PERL_OCTAL) ? PERL_OCTAL : 0;
+		int dotnetNumbering = (flags & DOTNET_NUMBERING) != 0 ? DOTNET_NUMBERING : 0;
+
+		if ((flags & LITERAL) != 0) {
+			// Not sure if CANON_EQ is included for literal, docs says no, so following the docs
+
+			String newFlags = caseInsensitive + unicodeCase;
+
+			if (newFlags.length() != 0)
+				newFlags = "(?" + newFlags + ")";
+
+			// TODO: see if cannot add constructor that removes need to recompile pattern
+			// Note that java 5 has a bug, where RegExPlus refactors quote blocks with escaped metacharacters
+			// Other java versions, a quoted section does not need refactoring
+			return lazyCompile(newFlags + quote(pattern.pattern()));
+		} else {
+			String newFlags = unixLines + caseInsensitive + comments + multiline + dotall + unicodeCase
+					+ duplicateNames
+					+ explicitCapture + perlOctal + verifyGroups;
+
+			if (newFlags.length() == 0) {
+				// No changes are necessary, since no flags can be inlined
+				// return this;
+				return lazyCompile(pattern.pattern());
+			} else {
+				newFlags = "(?" + newFlags + ")";
+
+				// TODO: see if cannot add constructor that removes need to recompile pattern
+				return lazyCompile(newFlags + pattern.pattern(), canonEq | dotnetNumbering);
+				// return Pattern.compile(flags + pattern(), canonEq | verifyGroups | dotnetNumbering);
+				// return Pattern.compile(flags + pattern(), canonEq | verifyGroups | perlOctal | dotnetNumbering);
+			}
+		}
+	}
+
+	/**
+	 * Normalizes the pattern by inlining all possible flags.
+	 * 
+	 * <p><b>Note</b>: the returned pattern matches the exact same inputs as this pattern.</p>
+	 * 
+	 * @return the normalized pattern
+	 */
+	public Pattern normalize()
+	{
+		if (flags() == 0)
+			return this;
+
+		/* Inline modifiers */
+		String unixLines = has(UNIX_LINES) ? "d" : "";
+		String caseInsensitive = has(CASE_INSENSITIVE) ? "i" : "";
+		String comments = has(COMMENTS) ? "x" : "";
+		String multiline = has(MULTILINE) ? "m" : "";
+		String dotall = has(DOTALL) ? "s" : "";
+		String unicodeCase = has(UNICODE_CASE) ? "u" : "";
+		String duplicateNames = has(DUPLICATE_NAMES) ? "J" : "";
+		String explicitCapture = has(EXPLICIT_CAPTURE) ? "n" : "";
+		String perlOctal = has(PERL_OCTAL) ? "o" : "";
+		String verifyGroups = has(VERIFY_GROUPS) ? "v" : "";
+
+		/* No inline modifier */
+		int canonEq = has(CANON_EQ) ? CANON_EQ : 0;
+		// int verifyGroups = has(VERIFY_GROUPS) ? VERIFY_GROUPS : 0;
+		// int perlOctal = has(PERL_OCTAL) ? PERL_OCTAL : 0;
+		int dotnetNumbering = has(DOTNET_NUMBERING) ? DOTNET_NUMBERING : 0;
+
+		if (has(LITERAL)) {
+			// Not sure if CANON_EQ is included for literal, docs says no, so following the docs
+
+			@SuppressWarnings("hiding")
+			String flags = caseInsensitive + unicodeCase;
+
+			if (flags.length() != 0)
+				flags = "(?" + flags + ")";
+
+			// TODO: see if cannot add constructor that removes need to recompile pattern
+			// Note that java 5 has a bug, where RegExPlus refactors quote blocks with escaped metacharacters
+			// Other java versions, a quoted section does not need refactoring
+			return lazyCompile(flags + quote(pattern()));
+		} else {
+			@SuppressWarnings("hiding")
+			String flags = unixLines + caseInsensitive + comments + multiline + dotall + unicodeCase + duplicateNames
+					+ explicitCapture + perlOctal + verifyGroups;
+
+			if (flags.length() == 0) {
+				// No changes are necessary, since no flags can be inlined
+				return this;
+			} else {
+				flags = "(?" + flags + ")";
+
+				// TODO: see if cannot add constructor that removes need to recompile pattern
+				return lazyCompile(flags + pattern(), canonEq | dotnetNumbering);
+				// return Pattern.compile(flags + pattern(), canonEq | verifyGroups | dotnetNumbering);
+				// return Pattern.compile(flags + pattern(), canonEq | verifyGroups | perlOctal | dotnetNumbering);
+			}
+		}
 	}
 
 	/**
@@ -2028,12 +2529,11 @@ public final class Pattern implements Serializable
 	 * 
 	 * <p>Note that backslashes (<tt>\</tt>) and dollar signs (<tt>$</tt>) in
 	 * the replacement string may cause the results to be different than if it
-	 * were being treated as a literal replacement string; see
-	 * {@link Matcher#replaceFirst}. Use {@link Matcher#quoteReplacement} to
+	 * were being treated as a literal replacement string; see {@link Matcher#replaceFirst}. Use
+	 * {@link Matcher#quoteReplacement} to
 	 * suppress the special meaning of these characters, if desired.</p>
 	 * 
-	 * <p><b>Note</b>: this function serves as a substitute for
-	 * {@link String#replaceFirst(String, String)}.</p>
+	 * <p><b>Note</b>: this function serves as a substitute for {@link String#replaceFirst(String, String)}.</p>
 	 * 
 	 * @param input
 	 *            The character sequence to be matched
@@ -2073,12 +2573,11 @@ public final class Pattern implements Serializable
 	 * 
 	 * <p>Note that backslashes (<tt>\</tt>) and dollar signs (<tt>$</tt>) in
 	 * the replacement string may cause the results to be different than if it
-	 * were being treated as a literal replacement string; see
-	 * {@link Matcher#replaceAll}. Use {@link Matcher#quoteReplacement} to
+	 * were being treated as a literal replacement string; see {@link Matcher#replaceAll}. Use
+	 * {@link Matcher#quoteReplacement} to
 	 * suppress the special meaning of these characters, if desired.</p>
 	 * 
-	 * <p><b>Note</b>: this function serves as a substitute for
-	 * {@link String#replaceAll(String, String)}.</p>
+	 * <p><b>Note</b>: this function serves as a substitute for {@link String#replaceAll(String, String)}.</p>
 	 * 
 	 * @param input
 	 *            The character sequence to be matched
@@ -2181,8 +2680,7 @@ public final class Pattern implements Serializable
 	 * compile}(</tt><i>regex</i><tt>).{@link Pattern#split(CharSequence, int)
 	 * split}(</tt><i>input</i><tt>,</tt><i>limit</i><tt>)</tt></blockquote>
 	 * 
-	 * <p><b>Note</b>: this function serves as a substitute for
-	 * {@link String#split(String, int)}.</p>
+	 * <p><b>Note</b>: this function serves as a substitute for {@link String#split(String, int)}.</p>
 	 * 
 	 * @param input
 	 *            The character sequence to be split
@@ -2206,8 +2704,8 @@ public final class Pattern implements Serializable
 	 * Splits this string around matches of the given regular expression.
 	 * 
 	 * <p>
-	 * This method works as if by invoking the three-argument
-	 * {@link #split(CharSequence, String, int) split} method with the given
+	 * This method works as if by invoking the three-argument {@link #split(CharSequence, String, int) split} method
+	 * with the given
 	 * input sequence, expression and a limit argument of zero. Trailing
 	 * empty
 	 * strings are therefore not included in the resulting array.
@@ -2235,8 +2733,7 @@ public final class Pattern implements Serializable
 	 * </table>
 	 * </blockquote>
 	 * 
-	 * <p><b>Note</b>: this function serves as a substitute for
-	 * {@link String#split(String)}.</p>
+	 * <p><b>Note</b>: this function serves as a substitute for {@link String#split(String)}.</p>
 	 * 
 	 * @param input
 	 *            The character sequence to be split
@@ -2348,15 +2845,15 @@ public final class Pattern implements Serializable
 	 */
 	public String[] split(CharSequence input, int limit)
 	{
-		return this.internalPattern.split(input, limit);
+		return getInternalPattern().split(input, limit);
 	}
 
 	/**
 	 * Splits the given input sequence around matches of this pattern.
 	 * 
 	 * <p>
-	 * This method works as if by invoking the two-argument
-	 * {@link #split(java.lang.CharSequence, int) split} method with the given
+	 * This method works as if by invoking the two-argument {@link #split(java.lang.CharSequence, int) split} method
+	 * with the given
 	 * input sequence and a limit argument of zero. Trailing empty strings
 	 * are
 	 * therefore not included in the resulting array.
@@ -2397,7 +2894,7 @@ public final class Pattern implements Serializable
 	 */
 	public String[] split(CharSequence input)
 	{
-		return this.internalPattern.split(input, 0);
+		return getInternalPattern().split(input, 0);
 	}
 
 	/**
@@ -2426,6 +2923,166 @@ public final class Pattern implements Serializable
 	}
 
 	/**
+	 * Java regular expression metacharacters.
+	 * 
+	 * <p><code>\.*?+[]{|()^$#</code></p>
+	 * 
+	 * <p><b>Note:</b> '#' is included in the escapped metacharacters in case {@link Pattern#COMMENTS COMMENTS} is
+	 * enabled, and the escaped text in only a part of the regular expression, which occurs when the COMMENTS flag is
+	 * enabled.</p>
+	 * 
+	 * <p><b>Note</b>: ']' is included in the case that the regular expression is used in a regex tool that
+	 * requires the closing brace to be escaped (for example, Javascript). Java does not require it to be
+	 * escaped, but escaping it does no harm.</p>
+	 * 
+	 * <p><b>Note</b>: '}' is included in the case that the regular expression is used in a regex tool that
+	 * requires the closing curly brace to be escaped (for example, Android development). Java does not require it to be
+	 * escaped, but escaping it does no harm.</p>
+	 */
+	public static final String REGEX_METACHARACTERS = "\\.*?+[]{}|()^$#";
+
+	/**
+	 * Java regular expression metacharacters when within a character class (for example, <code>[abc]</code>).
+	 * 
+	 * <p><code>^-[]\#&</code></p>
+	 * 
+	 * <p><b>Note</b>: '#' is included in the escapped metacharacters in case {@link Pattern#COMMENTS COMMENTS} is
+	 * enabled, and the escaped text in only a part of the regular expression, which occurs when the COMMENTS flag is
+	 * enabled.</p>
+	 */
+	public static final String REGEX_CHAR_CLASS_METACHARACTERS = "^-[]\\#&";
+
+	/** Pattern to match any character. */
+	// private static final Pattern anyCharacterPattern = compile(".", DOTALL);
+
+	/**
+	 * Pattern used to escape metacharacters.
+	 */
+	// static final Pattern ESCAPE_REGEX_METACHARACTERS = escapeMetacharacters(REGEX_METACHARACTERS);
+
+	/**
+	 * Pattern used to escape metacharacters found in a character class.
+	 */
+	// static final Pattern ESCAPE_REGEX_CHAR_CLASS_METACHARS = escapeMetacharacters(REGEX_CHAR_CLASS_METACHARACTERS);
+
+	/**
+	 * Returns a literal pattern <code>String</code> for the specified
+	 * <code>String</code>.
+	 * 
+	 * <p>This method produces a <code>String</code> that can be used to
+	 * create a <code>Pattern</code> that would match the string <code>s</code> as
+	 * if it were a literal pattern.</p>
+	 * 
+	 * <p>Metacharacters or escape sequences in the input sequence will be given no special meaning.</p>
+	 * 
+	 * <p>This method escapes the metacharacters specified by {@link #REGEX_METACHARACTERS}:
+	 * <code>\.*?+[]{|()^$#</code></p>
+	 * 
+	 * <p><b>Note</b>: this function escapes each metacharacter individually,
+	 * whereas {@link Pattern#quote(String)} uses a <code>\Q..\E</code> block. This
+	 * method can be used to create a regular expression to use with tools that don't support <code>\Q..\E</code>
+	 * blocks.</p>
+	 * 
+	 * @param s
+	 *            The string to be literalized
+	 * @return A literal string replacement
+	 */
+	public static String literal(String s)
+	{
+		return literal(s, REGEX_METACHARACTERS);
+	}
+
+	/**
+	 * Returns a literal pattern <code>String</code> for the specified
+	 * <code>String</code>.
+	 * 
+	 * <p>This method produces a <code>String</code> that can be used to
+	 * create a <code>Pattern</code> that would match the string <code>s</code> as
+	 * if it were a literal pattern.</p>
+	 * 
+	 * <p>The specified <code>metacharacters</code> or escape sequences in the input sequence will be given no special
+	 * meaning.</p>
+	 * 
+	 * <p><b>Note</b>: this function escapes each metacharacter individually,
+	 * whereas {@link Pattern#quote(String)} uses a <code>\Q..\E</code> block. This
+	 * method can be used to create a regular expression to use with tools that don't support <code>\Q..\E</code>
+	 * blocks.</p>
+	 * 
+	 * @param s
+	 *            The string to be literalized
+	 * @param metacharacters
+	 *            the metacharacters to escape
+	 * @return A literal string replacement
+	 */
+	public static String literal(String s, String metacharacters)
+	{
+		// literal.length() will be at least s.length, but no more than 2*s.length()
+		StringBuilder literal = new StringBuilder(s.length());
+
+		for (int i = 0; i < s.length(); i++)
+		{
+			char c = s.charAt(i);
+
+			if (c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z' || c >= '0' && c <= '9')
+			{
+				literal.append(c);
+				continue;
+			}
+
+			if (metacharacters.indexOf(c) != -1)
+			{
+				literal.append('\\');
+			}
+
+			literal.append(c);
+		}
+
+		return literal.toString();
+
+		// return literal(s, escapeMetacharacters(metacharacters));
+	}
+
+	/**
+	 * Returns a literal pattern <code>String</code> for the specified
+	 * <code>String</code>.
+	 * 
+	 * <p>This method produces a <code>String</code> that can be used to
+	 * create a <code>Pattern</code> that would match the string <code>s</code> as
+	 * if it were a literal pattern.</p>
+	 * 
+	 * <p>Metacharacters or escape sequences in the input sequence will be given no special meaning.</p>
+	 * 
+	 * <p>This method escapes the following metacharacters: <code></code></p>
+	 * 
+	 * <p><b>Note</b>: this function escapes each metacharacter individually,
+	 * whereas {@link Pattern#quote(String)} uses a <code>\Q..\E</code> block. This
+	 * method can be used to create a regular expression to use with tools that don't support <code>\Q..\E</code>
+	 * blocks.</p>
+	 * 
+	 * @param s
+	 *            The string to be literalized
+	 * @param escapeMetachars
+	 *            pattern to match the metacharacters to escape
+	 * @return A literal string replacement
+	 */
+	// static String literal(String s, Pattern escapeMetachars)
+	// {
+	// return escapeMetachars.matcher(s).replaceAll("\\\\$0");
+	// }
+
+	/**
+	 * Returns a pattern which will match any single metacharacter in the specified metacharacters.
+	 * 
+	 * @param metacharacters
+	 *            the metacharacters
+	 * @return a pattern which will match any single metacharacter in the specified metacharacters
+	 */
+	// private static Pattern escapeMetacharacters(String metacharacters)
+	// {
+	// return compile("[" + literal(metacharacters, anyCharacterPattern) + "]", 0, false);
+	// }
+
+	/**
 	 * Recompile the Pattern instance from a stream. The original pattern string
 	 * is read in and the object tree is recompiled from it.
 	 */
@@ -2441,59 +3098,227 @@ public final class Pattern implements Serializable
 		// if length > 0, the Pattern is lazily compiled
 		compiled = false;
 		if (pattern.length() == 0) {
-			capturingGroupCount = 0;
-			setInternalPattern("");
-			compiled = true;
+			initializeEmptyPattern();
 		}
+
+		// TODO: cache pattern here??
+	}
+
+	private void initializeForZeroGroups()
+	{
+		/*
+		 * Expected results (with 0 groups):
+		 * 
+		 * groupMapping : {[0][1]=0}
+		 * -size: 1
+		 */
+		groupMapping = new HashMap<String, Integer>(1);
+
+		// Map [i][1] -> i (e.g. [0][1]=0)
+		groupMapping.put(getMappingName(0, 1), 0);
+
+		/*
+		 * Expected results (with 0 groups):
+		 * 
+		 * groupCounts: {=0, [0]=1}
+		 * -size: 2
+		 */
+		groupCounts = new HashMap<String, Integer>(2);
+
+		// Map empty string group name to group count
+		groupCounts.put("", 0);
+
+		// Map [i] -> 1 (e.g. [0]=1)
+		groupCounts.put(wrapIndex(0), 1);
+
+		/* Initialize pattern values */
+		capturingGroupCount = 0;
+		addedGroups = false;
+	}
+
+	private void initializeEmptyPattern()
+	{
+		initializeForZeroGroups();
+		setInternalPattern("");
+		compiled = true;
 	}
 
 	/**
-	 * This private constructor is used to create all Patterns. The pattern
-	 * string and match flags are all that is needed to completely describe a
+	 * This private constructor is used to create all Patterns (other than those upcasted from Java patterns).
+	 * The pattern string and match flags are all that is needed to completely describe a
 	 * Pattern.
 	 * 
 	 * @param regex
 	 *            the expression to be compiled
 	 * @param flags
 	 *            match flags bit mask
+	 * @param lazyCompiling
+	 *            whether to lazily compile pattern
 	 */
-	private Pattern(String regex, int flags)
+	private Pattern(String regex, int flags, boolean lazyCompiling)
 	{
-		// only run online
-		// try {
-		// getClass().getProtectionDomain().getCodeSource()
-		// .getLocation().toString();
-		// throw new AssertionError();
-		// } catch (Exception e) {
-		// }
+		// TODO: derive method to perform a simple check on regex to see if refactoring is necessary
+		// many regexes don't need to be refactored, try to detect some
+
+		// Optimize refactoring
 
 		this.pattern = regex;
 		this.flags = flags;
 
 		// this.caseInsensitiveGroupNames = has(CASE_INSENSITIVE_NAMES);
-		this.groupMapping = new HashMap<String, Integer>(2);
 
 		if (regex.length() > 0) {
-			compile();
+			if (!lazyCompiling)
+				compile();
 		} else {
-			capturingGroupCount = 0;
-			setInternalPattern("");
-			compiled = true;
+			initializeEmptyPattern();
 		}
 	}
 
 	/**
-	 * Refactors the regular expression to an equivalent form usable by Java's
-	 * {@link java.util.regex.Pattern} class, and compiles the internal
+	 * Constructor to create a Pattern object from a Java Pattern.
+	 * 
+	 * <p><b>Note</b>: no compiling or refactoring of the pattern is performed,
+	 * since the Pattern is already compiled and valid for use by Java's Regular
+	 * Expression engine.</p>
+	 * 
+	 * @param pattern
+	 *            the pattern
+	 * @since 0.2
+	 */
+	Pattern(java.util.regex.Pattern pattern)
+	{
+		this.pattern = pattern.pattern();
+		flags = pattern.flags();
+
+		int groupCount = pattern.matcher("").groupCount();
+		capturingGroupCount = groupCount;
+
+		// Initialize groupMapping and groupCounts
+		groupMapping = new HashMap<String, Integer>(groupCount + 1);
+		groupCounts = new HashMap<String, Integer>(groupCount + 2);
+
+		/*
+		 * Expected results (with three groups):
+		 * 
+		 * groupMapping : {[0][1]=0, [1][1]=1, [2][1]=2, [3][1]=3}
+		 * -size: groupCount + 1
+		 * 
+		 * groupCounts: {=3, [0]=1, [1]=1, [2]=1, [3]=1}
+		 * -size: groupCount + 2
+		 */
+
+		// Map empty string group name to group count
+		groupCounts.put("", groupCount);
+
+		for (int i = 0; i <= groupCount; i++) {
+			String groupName = wrapIndex(i);
+
+			// Map [i][1] -> i (e.g. [0][1]=0)
+			groupMapping.put(getMappingName(groupName, 1), i);
+
+			// Map [i] -> 1 (e.g. [0]=1)
+			groupCounts.put(groupName, 1);
+		}
+
+		// For Java 7, adds named groups (if any)
+		try {
+			// Get map of group names -> group index
+			Field field;
+			field = pattern.getClass().getDeclaredField("namedGroups");
+			field.setAccessible(true);
+			@SuppressWarnings("unchecked")
+			Map<String, Integer> javaGroupMapping = (Map<String, Integer>) field.get(pattern);
+
+			// Null if doesn't have any named groups
+			if (javaGroupMapping != null) {
+				// Add entries for each named group
+				for (Entry<String, Integer> entry : javaGroupMapping.entrySet()) {
+					String groupName = entry.getKey();
+					Integer groupNumber = entry.getValue();
+
+					// Map groupName[1] -> groupNumber
+					groupMapping.put(getMappingName(groupName, 1), groupNumber);
+
+					// Map groupName -> 1 (e.g. [0]=1)
+					// (Always valid, since Java doesn't allow duplicate groups)
+					groupCounts.put(groupName, 1);
+				}
+			}
+		} catch (Exception e) {
+			// Do nothing
+		}
+
+		internalPattern = pattern;
+		compiled = true;
+	}
+
+	/* Methods called ONLY when initializing a Pattern */
+	void setCapturingGroupCount(int capturingGroupCount)
+	{
+		this.capturingGroupCount = capturingGroupCount;
+	}
+
+	void setAddedGroups(boolean addedGroups)
+	{
+		this.addedGroups = addedGroups;
+	}
+
+	int getGroupCount(String groupName)
+	{
+		Integer groupCount = groupCounts.get(groupName);
+		return (groupCount == null ? 0 : groupCount);
+	}
+
+	/**
+	 * Gets the mapping from group names to group counts
+	 * 
+	 * <p>For named groups, the key is the group name</p>
+	 * <p>For unnamed groups, the key is the group number surrounded by '[' and ']'. For example, group 1 would be the
+	 * key "[1]" in the returned map</p>
+	 * 
+	 * @return an unmodifiable map from group names to group counts
+	 */
+	public Map<String, Integer> getGroupCounts()
+	{
+		return Collections.unmodifiableMap(groupCounts);
+	}
+
+	void setGroupCounts(Map<String, Integer> groupCounts)
+	{
+		this.groupCounts = groupCounts;
+	}
+
+	/**
+	 * Refactors the regular expression to an equivalent form usable by Java's {@link java.util.regex.Pattern} class,
+	 * and compiles the internal
 	 * <code>Pattern</code> using the refactored regular expression.
 	 */
 	private void compile()
 	{
-		// refactor <pattern> to be used as a RegEx pattern
-		Refactor refactor = new Refactor(pattern);
+		// System.out.println("Compiling (" + flags + "): " + pattern);
+
+		String refactoredPattern;
+		Refactor refactor;
+
+		if (has(LITERAL)) {
+			initializeForZeroGroups();
+			refactor = null;
+			refactoredPattern = pattern;
+		} else {
+			groupMapping = new HashMap<String, Integer>(2);
+			// refactor <pattern> to be used as a RegEx pattern
+			// Refactor refactor = new Refactor(pattern);
+
+			refactor = new Refactor(this);
+			refactoredPattern = refactor.toString();
+		}
 
 		try {
-			setInternalPattern(refactor.toString());
+			// System.out.println(refactoredPattern);
+
+			// setInternalPattern(refactor.toString());
+			setInternalPattern(refactoredPattern);
 		} catch (java.util.regex.PatternSyntaxException e) {
 			// // on error, show error using the original pattern
 			// // (not refactored form)
@@ -2501,8 +3326,19 @@ public final class Pattern implements Serializable
 			// System.out.println(e.getMessage());
 			//
 			String desc = e.getDescription();
-			int index = refactor.changes.getOriginalIndex(e.getIndex());
+			int index;
 
+			try {
+				// TODO: can sometimes be incorrect with subpatterns
+				// e.g. "(?+1)(?<test>*)"
+				index = refactor == null ? -1 : refactor.changes.getOriginalIndex(e.getIndex());
+			} catch (IllegalArgumentException e1) {
+				// Unknown original index
+				// Can occurn, for example, in the regex "(?<test>*\\01)"
+				index = -1;
+			}
+
+			// System.out.println(refactor.result);
 			throw new PatternSyntaxException(desc, pattern, index);
 			//
 			// PatternErrorMessage errorMessage = PatternErrorMessage
@@ -2517,14 +3353,14 @@ public final class Pattern implements Serializable
 		// {
 		// int index = refactor.changes.getOriginalIndex(e.getIndex());
 		// PatternErrorMessage errorMessage = e.getErrorMessage();
-		//			
+		//
 		// if (errorMessage != null)
 		// throw new PatternSyntaxException(errorMessage, pattern, index);
 		// else
 		// {
 		// int errorCode = e.getErrorCode();
 		// String desc = e.getDescription();
-		//				
+		//
 		// throw new PatternSyntaxException(errorCode, desc, pattern, index);
 		// }
 		// }
@@ -2536,8 +3372,7 @@ public final class Pattern implements Serializable
 	 * Sets the internal <code>Pattern</code> to the <code>Pattern</code>
 	 * returned when calling
 	 * 
-	 * <blockquote><tt>{@link java.util.regex.Pattern}.</
-	 * {@link java.util.regex.Pattern#compile(String, int)
+	 * <blockquote><tt>{@link java.util.regex.Pattern}.</ {@link java.util.regex.Pattern#compile(String, int)
 	 * compile}(</tt><i>regex</i> <tt>,</tt> <i>flags</i><tt>)</tt>
 	 * </blockquote>
 	 * 
@@ -2548,12 +3383,9 @@ public final class Pattern implements Serializable
 	private void setInternalPattern(String regex)
 	{
 		// keep all flags except those introduced in this class
-		this.internalPattern = java.util.regex.Pattern.compile(regex, flags
-				& ~(DUPLICATE_NAMES | VERIFY_GROUPS | DOTNET_NUMBERING
-				| EXPLICIT_CAPTURE | PERL_OCTAL));
-		// this.internalPattern = java.util.regex.Pattern.compile(regex, flags
-		// & ~(DUPLICATE_NAMES | CASE_INSENSITIVE_NAMES
-		// | VERIFY_GROUPS | ONLY_CAPTURING_GROUPS));
+		this.internalPattern = java.util.regex.Pattern.compile(regex, flags &
+				~(DUPLICATE_NAMES | VERIFY_GROUPS | DOTNET_NUMBERING |
+						EXPLICIT_CAPTURE | PERL_OCTAL));
 	}
 
 	/**
@@ -2566,6 +3398,16 @@ public final class Pattern implements Serializable
 	boolean has(int f)
 	{
 		return (flags & f) != 0;
+	}
+
+	/**
+	 * @param flag
+	 * @return
+	 * @since 0.2
+	 */
+	public boolean has(PatternFlag flag)
+	{
+		return has(flag.intValue());
 	}
 
 	/**
@@ -2607,8 +3449,7 @@ public final class Pattern implements Serializable
 	 * the ascii value for '-' (&#92;u2d) being less than the ascii value for
 	 * '.' (&#92;u2e).</p>
 	 * 
-	 * <p>This method can be called in the compare function of a
-	 * {@link Comparator} object
+	 * <p>This method can be called in the compare function of a {@link Comparator} object
 	 * to provide sorting.</p>
 	 * 
 	 * <blockquote><pre>
@@ -2631,6 +3472,7 @@ public final class Pattern implements Serializable
 	 */
 	public static int naturalCompareTo(CharSequence value1, CharSequence value2)
 	{
+		// TODO: don't use regex - performance hit
 		java.util.regex.Matcher matcher1 = naturalSort.matcher(value1);
 		java.util.regex.Matcher matcher2 = naturalSort.matcher(value2);
 
@@ -2682,8 +3524,8 @@ public final class Pattern implements Serializable
 						// e.g. "01" and "1"
 
 						// more leading zeros first "01" < "1"
-						leftMostDifference = match1.length() > match2.length()
-								? -1 : 1;
+						leftMostDifference = match1.length() > match2.length() ? -1
+								: 1;
 					}
 				}
 			} else {
@@ -2698,3767 +3540,274 @@ public final class Pattern implements Serializable
 	}
 
 	/**
-	 * Contains utility functions / fields that are used when refactoring the
-	 * inputted regular expression. These functions / fields are only meant to
-	 * be called from the {@link Refactor} class.
+	 * Normalizes the group name.
+	 * 
+	 * @param groupName
+	 *            the group name
+	 * @return the normalized group name
+	 * @throws IllegalArgumentException
+	 *             If <code>groupName</code> is a relative unnamed group (e.g.
+	 *             "[-4]"), which doesn't exist, or if <code>groupName</code> is
+	 *             an unnamed group whose index is not a parsable integer (e.g.
+	 *             "[a]")
 	 */
-	static class RefactorUtility
+	String normalizeGroupName(String groupName)
 	{
-		/** String pattern to match a group name (excluding occurrence). */
-		private static final String groupName = "\\w++";
-
-		/**
-		 * String pattern to match an optional group name (excluding
-		 * occurrence).
-		 */
-		private static final String optGroupName = "\\w*+";
-
-		/**
-		 * String pattern to match a group name (including occurrence)
-		 * 
-		 * <p>(2 groups)</p>
-		 */
-		static final java.util.regex.Pattern fullGroupName = java.util.regex.Pattern
-				.compile("(\\[-?\\d++]|" + optGroupName
-				+ ")(?:\\[(-?\\d++)])?");
-
-		/**
-		 * String pattern to match an "any group"
-		 * 
-		 * (e.g. groupName, groupName[0])
-		 * 
-		 * <p>(1 group)</p>
-		 */
-		private static final String fullGroupName0 = "(\\[-?\\d++]|"
-				+ groupName + ")(?:\\[0++])?";
-
-		/**
-		 * Formats an integer character code (0 through 255) as
-		 * <code>\x</code><i>hh</i>.
-		 */
-		static final String hexCodeFormat = "\\x%1$02x";
-
-		/**
-		 * Formats an integer character code as
-		 * <code>&#92;u</code><i>hhhh</i>.
-		 */
-		static final String unicodeFormat = "\\u%1$04x";
-
-		static final Map<String, String> posixClasses = new HashMap<String, String>(
-				13);
-
-		static {
-			posixClasses.put("alnum", "Alnum");
-			posixClasses.put("alpha", "Alpha");
-			posixClasses.put("ascii", "ASCII");
-			posixClasses.put("blank", "Blank");
-			posixClasses.put("cntrl", "Cntrl");
-			posixClasses.put("digit", "Digit");
-			posixClasses.put("graph", "Graph");
-			posixClasses.put("lower", "Lower");
-			posixClasses.put("print", "Print");
-			posixClasses.put("punct", "Punct");
-			posixClasses.put("space", "Space");
-			posixClasses.put("upper", "Upper");
-			posixClasses.put("xdigit", "XDigit");
-		}
-
-		/**
-		 * Pattern to match parts of the inputted regular expression that need
-		 * to be processed before refactoring.
-		 */
-		static final java.util.regex.Pattern preRefactor = java.util.regex.Pattern
-				.compile(
-
-		/*
-		 * matches "(?onFlags-offFlags)" or "(?onFlags-offFlags:" (also
-		 * matches a non-capture group - onFlags/offFlags are omitted)
-		 * 
-		 * group: onFlags (empty string if none) group + 1: offFlags
-		 * (empty string if none; null, if omitted) (2 groups)
-		 */
-		"\\Q(?\\E(\\w*+)(?:-(\\w*+))?[:\\)]|"
-
-		/*
-		 * matches a named capture group
-		 * "(?<name>" (form 0)
-		 * "(?'name'" (form 1)
-		 * "(?P<name>" (form 2)
-		 * 
-		 * group: everything after first symbol
-		 * group + 1: the name
-		 * (6 groups)
-		 */
-
-		/* form 0 - 2 start */
-		+ "\\Q(?\\E(?:"
-
-		/* form 0 */
-		+ "<((" + groupName + ")>?)|"
-
-		/* form 1 */
-		+ "'((" + optGroupName + ")'?)|"
-
-		/* form 2 */
-		+ "P<((" + optGroupName + ")>?)"
-
-		/* form 0 - 2 end */
-		+ ")|"
-
-		/*
-		 * matches an unnamed capture group "(" - not followed by a "?"
-		 * 
-		 * group: everything (1 group)
-		 */
-		+ "(\\((?!\\?))|"
-
-		/*
-		 * matches a back reference (by name)
-		 * "\g{name}" (form 0)
-		 * "\k<name>" (form 1)
-		 * "\k'name'" (form 2)
-		 * "\k{name}" (form 3)
-		 * "(?P=name)" (form 4)
-		 * 
-		 * group : the name
-		 * 
-		 * (5 groups)
-		 * (<name> can only be an "any group" (e.g. groupName[0]))
-		 */
-
-		/* form 0 */
-		+ "\\Q\\g{\\E" + fullGroupName0 + "}|"
-
-		/* form 1 - 3 start */
-		+ "\\\\k(?:"
-
-		/* form 1 */
-		+ "<" + fullGroupName0 + ">|"
-
-		/* form 2 */
-		+ "'" + fullGroupName0 + "'|"
-
-		/* form 3 */
-		+ "\\{" + fullGroupName0 + "}"
-
-		/* form 1 - 3 end */
-		+ ")|"
-
-		/* form 4 */
-		+ "\\Q(?P=\\E" + fullGroupName0 + "\\)|"
-
-		/*
-		 * matches an assert condition
-		 * "(?(?=", "(?(?!", "(?(?<=), or "(?(?<!"
-		 * 
-		 * group: the assert part (inside the parentheses)
-		 * (1 group)
-		 */
-		+ "\\Q(?(\\E(\\?<?[!=])|"
-
-		/*
-		 * matches a reference condition (by number) matches
-		 * "(?(n)" or "(?(-n)"
-		 * 
-		 * group: the number
-		 * (1 group)
-		 */
-		+ "\\Q(?(\\E(-?\\d++)\\)|"
-
-		/*
-		 * matches a reference condition (by name)
-		 * "(?(<name>)" (form 0),
-		 * "(?('name')" (form 1), or
-		 * "(?(name)" (form 2)
-		 * 
-		 * group: everything after first symbol (excluding ")")
-		 * group + 1: the name
-		 * group + 2: the occurrence (if specified)
-		 * (9 groups)
-		 */
-
-		/* form 0 - 2 start */
-		+ "\\Q(?(\\E(?:"
-
-		/* form 0 */
-		+ "<(" + fullGroupName + ">?)|"
-
-		/* form 1 */
-		+ "'(" + fullGroupName + "'?)|"
-
-		/* form 2 */
-		+ "(" + fullGroupName + ")"
-
-		/* form 0 - 2 end */
-		+ ")\\)?|"
-
-		/*
-		 * matches comment group
-		 * "(?#comment) - comment cannot contain ")"
-		 * 
-		 * group: everything
-		 * (1 group)
-		 */
-		+ "(\\Q(?#\\E[^\\)]*+\\)?)|"
-
-		/*
-		 * matches a "branch reset" subpattern "(?|"
-		 * 
-		 * group: everything
-		 * (1 group)
-		 */
-		+ "(\\Q(?|\\E)|"
-
-		/* an open parenthesis - depth + 1 */
-		+ "\\(|"
-
-		/* a closed parenthesis - depth - 1 */
-		+ "\\)|"
-
-		/* a pike (|) - only react if inside condition */
-		+ "\\||"
-
-		/* an open square bracket - starts a character class */
-		+ "\\[|"
-
-		/* a closed square bracket - ends a character class */
-		+ "\\]|"
-
-		/* a "#" - starts comments when COMMENTS flag is enabled */
-		+ "#|"
-
-		/* matches a \Q..\E block */
-		+ "\\\\Q.*?(?:\\\\E|$)|"
-
-		/* matches an escaped character */
-		+ "\\\\[^Q]");
-
-		/**
-		 * Pattern to match parts of the inputted regular expression that need
-		 * to be processed after refactoring.
-		 */
-		static final java.util.regex.Pattern afterRefactor = java.util.regex.Pattern
-				.compile(
-
-		/*
-		 * matches:
-		 * "\g{##group-mappingName}"
-		 * "\g{##branchGroup-mappingName}"
-		 * "\g{##test-mappingName}"
-		 * "\g{##testF-mappingName}"
-		 * 
-		 * group: the number - mapped to the position to show the error
-		 * group + 1: type ("group", "test", or "testF")
-		 * group + 2: mappingName
-		 * (3 groups)
-		 */
-		"\\Q\\g{\\E(\\d++)(group|branchGroup|testF?)-([^}]++)\\}|"
-
-		/*
-		 * matches "(?onFlags-offFlags)" or "(?onFlags-offFlags:"
-		 * (also matches a non-capture group - onFlags/offFlags are omitted)
-		 * 
-		 * group: onFlags (empty string if none)
-		 * group + 1: offFlags (empty string if none; null, if omitted)
-		 * (2 groups)
-		 */
-		+ "\\Q(?\\E(\\w*+)(?:-(\\w*+))?[:\\)]|"
-
-		/*
-		 * matches "\x{hhh..}" - a hex code
-		 * 
-		 * group: the number
-		 * (1 group)
-		 */
-		+ "\\Q\\x{\\E([0-9a-fA-F]++)}|"
-
-		/*
-		 * matches "\xh" or "\xhh" - a hex code
-		 * 
-		 * group: the number
-		 * (1 group)
-		 */
-		+ "\\\\x([0-9a-fA-F]{1,2})|"
-
-		/*
-		 * matches a unicode character
-		 * 
-		 * group: the number
-		 * (1 group)
-		 */
-		+ "\\\\u([0-9a-fA-F]{1,4})|"
-
-		/*
-		 * matches a POSIX character class
-		 * 
-		 * group: "^" or "" (whether to negate or not)
-		 * group + 1: the class name
-		 * (2 group)
-		 */
-		+ "\\[:(\\^?)([A-Za-z]++):]|"
-
-		/*
-		 * matches a control character - \cA through \cZ
-		 * 
-		 * These are equivalent to \x01 through \x1A (26 decimal).
-		 * 
-		 * group: the control character's letter
-		 * (either upper and lower case are allowed)
-		 * (1 group)
-		 */
-		+ "\\\\c([A-Za-z])|"
-
-		/*
-		 * matches an unnamed capture group "(" - not followed by a "?"
-		 * 
-		 * group: everything (1 group)
-		 */
-		+ "(\\((?!\\?))|"
-
-		/* an open parenthesis - depth + 1 */
-		+ "\\(|"
-
-		/* a closed parenthesis - depth - 1 */
-		+ "\\)|"
-
-		/* an open square bracket - starts a character class */
-		+ "\\[|"
-
-		/* a closed square bracket - ends a character class */
-		+ "\\]|"
-
-		/* a "#" - starts comments when COMMENTS flag is enabled */
-		+ "#|"
-
-		/* matches an escaped character */
-		+ "\\\\.");
-
-		/**
-		 * A cache of Patterns used during the refactoring.
-		 * 
-		 * <p>The <code>Integer</code> key is the number of digits in the number
-		 * of capture groups for the inputted regular expression.</p>
-		 */
-		// private static final Map<Integer, java.util.regex.Pattern>
-		// refactorPatterns = new HashMap<Integer, java.util.regex.Pattern>();
-
-		/**
-		 * Pattern used during refactoring.
-		 */
-		private static final java.util.regex.Pattern refactorPattern = createRefactorPattern();
-
-		/**
-		 * A cache of Patterns used to match a number with a given digit count.
-		 * 
-		 * <p>The <code>Integer</code> key is the number of digits, and the
-		 * <code>Pattern</code> value is the pattern to match a number with that
-		 * many digits. The digits are in the first group, and any trailing
-		 * digits are in the second.</p>
-		 */
-		private static final Map<Integer, java.util.regex.Pattern> digitCountPatterns = new HashMap<Integer, java.util.regex.Pattern>(
-				2);
-
-		static final java.util.regex.Pattern perl_octal = java.util.regex.Pattern
-				.compile("^([0-3]?[0-7]{1,2})(\\d*+)$");
-
-		/**
-		 * Returns the pattern to use when refactoring an inputted regular
-		 * expression.
-		 * 
-		 * @param groupCount
-		 *            number of capture groups in the inputted regular
-		 *            expression
-		 * @return the pattern to use when refactoring
-		 */
-		// static java.util.regex.Pattern getRefactorPattern(int groupCount)
-		// {
-		// // number of digits in the largest group index
-		// // (e.g. 999 would be 3, and 1000 would be 4)
-		// Integer digitCount = digitCount(groupCount);
-		//
-		// if (!refactorPatterns.containsKey(digitCount)) {
-		// java.util.regex.Pattern fixup = createRefactorPattern();
-		//
-		// refactorPatterns.put(digitCount, fixup);
-		// return fixup;
-		// }
-		//
-		// return refactorPatterns.get(digitCount);
-		// }
-
-		/**
-		 * Returns the pattern to use when refactoring an inputted regular
-		 * expression.
-		 * 
-		 * @return the pattern to use when refactoring
-		 */
-		static java.util.regex.Pattern getRefactorPattern()
-		{
-			return refactorPattern;
-		}
-
-		/**
-		 * Returns a pattern that matches <code>digitCount</code> digits
-		 * followed by zero or more digits. The pattern has two capture groups.
-		 * The required digits are in the first group, and any trailing digits
-		 * are in the second.
-		 * 
-		 * @param digitCount
-		 *            the number of digits the pattern should match
-		 * @return a pattern that matches <code>digitCount</code> digits
-		 *         followed by zero or more digits
-		 */
-		static java.util.regex.Pattern getDigitCountPattern(int digitCount)
-		{
-			Integer digitCountI = digitCount;
-
-			if (digitCountPatterns.containsKey(digitCountI))
-				return digitCountPatterns.get(digitCountI);
-			else {
-				java.util.regex.Pattern pattern = java.util.regex.Pattern
-						.compile("(\\d{1," + digitCount + "})(\\d*+)");
-
-				digitCountPatterns.put(digitCountI, pattern);
-				return pattern;
+		// System.out.println(groupName);
+
+		if (groupName.startsWith("[") && groupName.endsWith("]")) {
+			try {
+				int index = getAbsoluteGroupIndex(parseInt(groupName
+						.substring(1, groupName.length() - 1)), groupCount());
+				return wrapIndex(index);
+			} catch (IndexOutOfBoundsException e) {
+				throw noNamedGroup(groupName);
+			} catch (IllegalArgumentException e) {
+				throw noNamedGroup(groupName);
 			}
 		}
+		// else if (groupCounts.get(groupName) == null) {
+		// try {
+		// // Check if numbered group
+		// int groupNumber = Integer.parseInt(groupName);
+		//
+		// if (groupCount(groupNumber) != 0)
+		// groupName = wrapIndex(getAbsoluteGroupIndex(groupNumber, groupCount()));
+		// } catch (Exception e) {
+		// }
+		// }
 
-		/**
-		 * Returns the number of digits in the given number
-		 * 
-		 * @param number
-		 *            the number whose digit count is returned
-		 * @return the number of digits in the given number
-		 */
-		static int digitCount(int number)
-		{
-			return String.valueOf(number).length();
+		return groupName;
+	}
+
+	/* Groovy methods - makes RegExPlus groovier */
+
+	/**
+	 * 'Case' implementation for this class, which allows
+	 * testing a String against a number of regular expressions (<b>in Groovy only</b>).
+	 * For example:
+	 * <pre>switch( str ) {
+	 * case +/one/ :
+	 * // the regex 'one' matches the value of str
+	 * }
+	 * </pre>
+	 * 
+	 * @param switchValue
+	 *            the switch value
+	 * @return <code>true</code> if the <code>switchValue</code> is deemed to match this <code>Pattern</code>
+	 * @since 0.2
+	 */
+	public boolean isCase(Object switchValue)
+	{
+		if (switchValue == null) {
+			// return caseValue == null;
+
+			// Since this != null, always return false if switch value is null
+			return false;
 		}
 
-		/**
-		 * Creates the Pattern that is used when refactoring a regular
-		 * expression with a group count of the specified number of digits.
-		 * 
-		 * @return the <code>Patter</code> to use when refactoring a regex
-		 */
-		private static java.util.regex.Pattern createRefactorPattern()
-		{
-			return java.util.regex.Pattern
-					.compile(
-
-					/*
-					 * matches "(?onFlags-offFlags)" or "(?onFlags-offFlags:"
-					 * (also matches a non-capture group
-					 * - onFlags/offFlags are omitted)
-					 * 
-					 * group: onFlags (empty string if none)
-					 * group + 1: offFlags
-					 * (empty string if none; null, if omitted)
-					 * 
-					 * (2 groups)
-					 */
-					"\\Q(?\\E(\\w*+)(?:-(\\w*+))?[:\\)]|"
-
-					/*
-					 * matches a named capture group
-					 * "(?<name>" (form 0)
-					 * "(?'name'" (form 1)
-					 * "(?P<name>" (form 2)
-					 * 
-					 * group: the name (3 groups)
-					 */
-
-					/* form 0 - 2 start */
-					+ "\\Q(?\\E(?:"
-
-					/* form 0 */
-					+ "<(" + groupName
-							+ ")>|"
-
-							/* form 1 */
-							+ "'("
-							+ groupName
-							+ ")'|"
-
-							/* form 2 */
-							+ "P<("
-							+ groupName
-							+ ")>"
-
-							/* form 0 - 2 end */
-							+ ")|"
-
-							/*
-							 * matches an unnamed capture group "(" - not
-							 * followed by a "?"
-							 * 
-							 * group: everything (1 group)
-							 */
-							+ "(\\((?!\\?))|"
-
-							/*
-							 * matches a back reference (by number)
-							 * "\n" (form 0)
-							 * "\gn" (form 1)
-							 * "\g{n}" or "\g{-n}" (form 2)
-							 * 
-							 * group: the number
-							 * last group: the next character (if a digit)
-							 * (4 groups)
-							 */
-
-							/* form 0 - 2 start */
-							+ "(?:"
-
-							/* form 0 */
-							+ "\\\\(\\d++)|"
-
-							/* form 1 */
-							+ "\\\\g(-?\\d++)|"
-
-							/* form 2 */
-							+ "\\Q\\g{\\E(-?\\d++)}"
-
-							/* form 0 - 2 end */
-							+ ")(\\d?)|"
-
-							/*
-							 * matches a back reference (by name)
-							 * "\g{name}" (form 0),
-							 * "\k<name>" (form 1),
-							 * "\k'name'" (form 2),
-							 * "\k{name}" (form 3),
-							 * "(?P=name)" (form 4)
-							 * 
-							 * group: everything after the first symbol
-							 * group + 1: the name
-							 * group + 2: the occurrence (if specified)
-							 * last group: the next character (if a digit)
-							 * (16 groups)
-							 */
-
-							/* form 0 - 4 start */
-							+ "(?:"
-
-							/* form 0 */
-							+ "\\Q\\g{\\E("
-							+ fullGroupName
-							+ "\\}?)|"
-
-							/* form 1 - 3 start */
-							+ "\\\\k(?:"
-
-							/* form 1 */
-							+ "<("
-							+ fullGroupName
-							+ ">?)|"
-
-							/* form 2 */
-							+ "'("
-							+ fullGroupName
-							+ "'?)|"
-
-							/* form 3 */
-							+ "\\{("
-							+ fullGroupName
-							+ "\\}?)"
-
-							/* form 1 - 3 end */
-							+ ")|"
-
-							/* form 4 */
-							+ "\\Q(?P=\\E("
-							+ fullGroupName
-							+ "\\)?)"
-
-							/* form 0 - 4 end */
-							+ ")(\\d?)|"
-
-							/*
-							 * matches an assert condition
-							 * "(?(?=)", "(?(?!)", "(?(?<=)", or "(?(?<!)"
-							 * 
-							 * group: the assert part (inside the parentheses)
-							 * (1 group)
-							 */
-							+ "\\Q(?(\\E(\\?<?[!=])|"
-
-							/*
-							 * matches a conditional pattern (by number)
-							 * "(?(n)" or "(?(-n)" (form 0)
-							 * 
-							 * group: the number
-							 * (1 group)
-							 */
-							+ "\\Q(?(\\E(-?\\d++)\\)|"
-
-							/*
-							 * matches a named reference condition
-							 * "(?(<name>)" (form 0),
-							 * "(?('name')" (form 1), or
-							 * "(?(name)" (form 2)
-							 * 
-							 * group: the name
-							 * group + 1: the occurrence (if specified)
-							 * (6 groups)
-							 */
-
-							/* form 0 - 2 start */
-							+ "\\Q(?(\\E(?:"
-
-							/* form 0 */
-							+ "<"
-							+ fullGroupName
-							+ ">|"
-
-							/* form 1 */
-							+ "'"
-							+ fullGroupName
-							+ "'|"
-
-							/* form 2 */
-							+ fullGroupName
-
-							/* form 0 - 2 end */
-							+ ")\\)|"
-
-							/*
-							 * matches a "branch reset" subpattern "(?|"
-							 * 
-							 * group: everything (1 group)
-							 */
-							+ "(\\Q(?|\\E)|"
-
-							/*
-							 * matches a numeric range
-							 * "(?Z[start..end])" or "(?NZ[start..end])"
-							 * 
-							 * group: "Z" or "NZ" (optional base and L/U)
-							 * //group + 1: "r" for raw mode, or <null>
-							 * group + 1: start
-							 * group + 2: end
-							 * (3 groups)
-							 */
-							// "\\Q(?\\E(N?Z(r)?(?:\\d++[LU]?)?)\\[(?:(-?\\d++)\\.\\.(-?\\d++)\\])?\\)?|"
-							+ "\\Q(?\\E(N?Z(?:\\d++[LU]?)?)\\[(?:(-?[0-9a-zA-Z]++)\\.\\.(-?[0-9a-zA-Z]++)\\]?)?\\)?|"
-
-							/* an open parenthesis */
-							+ "\\(|"
-
-							/* a closed parenthesis */
-							+ "\\)|"
-
-							/* a pike (|) */
-							+ "\\||"
-
-							/* an open square bracket - starts a character class */
-							+ "\\[|"
-
-							/* a closed square bracket - ends a character class */
-							+ "\\]|"
-
-							/*
-							 * a "#" - starts comments when COMMENTS flag is
-							 * enabled
-							 */
-							+ "#|"
-
-							/* matches an escaped character */
-							+ "\\\\.");
+		final Matcher matcher = matcher(switchValue.toString());
+		if (matcher.matches()) {
+			RegExPlusSupport.setLastMatcher(matcher);
+			return true;
+		} else {
+			return false;
 		}
 	}
 
 	/**
-	 * Class used to refactor a regular expression with "advanced" patternSyntax
-	 * to an equivalent form usable in Java and other RegEx engines.
+	 * Alias for {@link #getInternalPattern()}.
 	 * 
-	 * <p>
-	 * Depending on the flags set when compiling the pattern, additional
-	 * simplifications may be performed. Note these additional simplifications
-	 * are not required to use the pattern in Java. Rather, they are intended to
-	 * refactor the regular expression to a form usable by "any" RegEx engine
-	 * (including "basic" ones found in text editors, renamers, and other
-	 * software).
-	 * </p>
+	 * @return the regular expression pattern
+	 * @since 0.2
 	 */
-	private class Refactor
+	public java.util.regex.Pattern bitwiseNegate()
 	{
-		/** The regular expression to refactor. */
-		private final String regex;
-
-		/*
-		 * These values are used during the refactoring process, and were made
-		 * class members to reduce the need to pass them as parameters to the
-		 * different functions called during the refactoring process.
-		 * 
-		 * Note: these values may change. The value is based on the current step
-		 * of the refactoring process and how much the string has been parsed
-		 * during that step.
-		 */
-
-		/** The text for the matcher in the refactoring step **/
-		private String text;
-
-		/**
-		 * The flags
-		 */
-		@SuppressWarnings("hiding")
-		private int flags = flags();
-
-		/** Used to match the different parts to refactor. */
-		private java.util.regex.Matcher matcher;
-
-		/**
-		 * Contains the current result of the refactoring process.
-		 * 
-		 * <p><b>Note</b>: this is the StringBuffer used when calling
-		 * {@link java.util.regex.Matcher#appendReplacement(StringBuffer, String)}
-		 * and {@link java.util.regex.Matcher#appendTail(StringBuffer)}</p>
-		 */
-		private StringBuffer result;
-
-		/**
-		 * Stores the matching String for <tt>matcher</tt> - the return value of
-		 * {@link java.util.regex.Matcher#group()}
-		 */
-		private String match;
-
-		/** The number of unclosed opening parenthesis. */
-		private int parenthesisDepth;
-
-		/** The number of unclosed opening square brackets. */
-		private int charClassDepth;
-
-		/**
-		 * The total number of capture groups (includes capturing groups added
-		 * as part of the refactoring).
-		 */
-		private int totalGroups;
-
-		/**
-		 * Total number of unnamed groups
-		 */
-		private int unnamedGroupCount;
-
-		/**
-		 * The number of capture groups (excludes capture groups added as part
-		 * of the refactoring).
-		 */
-		private int currentGroup;
-
-		/**
-		 * The current named group (starts at 1)
-		 */
-		private int namedGroup;
-
-		/**
-		 * The current unnamed group (starts at 1)
-		 */
-		private int unnamedGroup;
-
-		/** The index for the first non-null group. */
-		private int group;
-
-		/**
-		 * A list with each index the mapping name for the repective perl group.
-		 * 
-		 * <p>Index 0 in the list refers to group 1</p>
-		 * (only used if {@link Pattern#DOTNET_NUMBERING} is set).
-		 */
-		private HashMap<Integer, String> perlGroupMapping;
-
-		/**
-		 * A map with mappings from the mapping name of a capture group to the
-		 * group index of the empty capture group used to test whether the group
-		 * matched or not.
-		 */
-		private Map<String, Integer> testConditionGroups = new HashMap<String, Integer>(
-				2);
-
-		/**
-		 * Set of group names that have an "any group" back reference
-		 */
-		private Set<String> anyGroupReferences = new HashSet<String>(2);
-
-		/** The capture groups that require a testing group. */
-		private TreeSet<String> requiresTestingGroup = new TreeSet<String>();
-
-		/**
-		 * A stack of states used to track when a testing group should be added
-		 * to a capture group.
-		 */
-		private Stack<AddTestGroupState> addTestGroup = new Stack<AddTestGroupState>();
-
-		/**
-		 * A stack of states used to track the else branch of a conditional
-		 * subpattern.
-		 */
-		private Stack<MatchState> handleElseBranch = new Stack<MatchState>();
-
-		/**
-		 * A stack of states used to track the end of the assertion in an assert
-		 * conditional
-		 */
-		private Stack<MatchState> handleEndAssertCond = new Stack<MatchState>();
-
-		/**
-		 * A stack of states used to track the branches in a branch reset
-		 * subpattern.
-		 */
-		private Stack<BranchResetState> branchReset = new Stack<BranchResetState>();
-
-		/**
-		 * A stack used to store the current flags.
-		 * 
-		 * <p>
-		 * When entering a new parenthesis grouping, the current flags are
-		 * saved. This value is later restored upon existing the parenthesis
-		 * grouping.
-		 * </p>
-		 */
-		private Stack<Integer> flagsStack = new Stack<Integer>();
-
-		/**
-		 * A map with mappings from group name to the number of occurrences for
-		 * that group name.
-		 */
-		@SuppressWarnings("hiding")
-		private Map<String, Integer> groupNameOccurrences = new HashMap<String, Integer>(
-				2);
-
-		/**
-		 * The differences (insertions, deletions, and replacements) made to the
-		 * original regular expression during the latest refactoring step.
-		 * 
-		 * <p>After each step, these differences are added to the list of
-		 * changes.</p>
-		 */
-		Differences differences = new Differences();
-
-		/**
-		 * The differences (insertions, deletions, and replacements) made to the
-		 * original regular expression during the refactoring process.
-		 * 
-		 * <p>If the refactored regular expression throws a
-		 * {@link PatternSyntaxException}, this field is used to map the index
-		 * for the exception to its respective index in the original regular
-		 * expression.</p>
-		 */
-		Differences changes = new Differences();
-
-		/**
-		 * List of changes performed during the pre-refactoring step
-		 */
-		private Differences preRefactoringChanges;
-
-		/**
-		 * Mapping from integer (incremental) to index for error
-		 */
-		private Map<Integer, Integer> errorTrace;
-
-		/**
-		 * Indicates if the current VM is Java 1.5
-		 */
-		private boolean isJava1_5;
-
-		/**
-		 * Resets the necessary values before performing the next step of the
-		 * refactoring.
-		 */
-		void reset()
-		{
-			flags = flags();
-			parenthesisDepth = 0;
-			charClassDepth = 0;
-			currentGroup = 0;
-			totalGroups = 0;
-			namedGroup = 0;
-			unnamedGroup = 0;
-
-			result = new StringBuffer();
-
-			addTestGroup.clear();
-			handleElseBranch.clear();
-			branchReset.clear();
-			groupNameOccurrences.clear();
-			flagsStack.clear();
-
-			changes.addAll(differences);
-			differences = new Differences();
-		}
-
-		/**
-		 * Internal method used for handling all patternSyntax errors. The
-		 * pattern is
-		 * displayed with a pointer to aid in locating the patternSyntax error.
-		 * 
-		 * @param errorMessage
-		 *            the <code>PatternErrorMessage</code> for the error
-		 * @param index
-		 *            The approximate index in the pattern of the error, or -1
-		 *            if the index is not known
-		 * @return a <code>PatternSyntaxException</code> with the given error
-		 *         message, index, and using the original regex
-		 */
-		// private PatternSyntaxException error(PatternErrorMessage
-		// errorMessage,
-		// int index)
-		private PatternSyntaxException error(String errorMessage, int index)
-		{
-			int originalIndex = changes.getOriginalIndex(index);
-
-			return new PatternSyntaxException(errorMessage, regex,
-					originalIndex);
-		}
-
-		/**
-		 * Creates a new Refactor object and refactors the given regular
-		 * expression so that it can be compiled by the original Pattern class.
-		 * 
-		 * @param regex
-		 *            the regular expression to refactor
-		 * @param patternSyntax
-		 *            the <code>PatternSyntax</code>
-		 */
-		Refactor(String regex)
-		{
-			this.regex = regex;
-
-			if (has(LITERAL)) {
-				this.result = new StringBuffer(regex);
-				return;
-			}
-
-			String javaVersion = System.getProperty("java.version");
-			isJava1_5 = naturalCompareTo(javaVersion, "1.5.0") >= 0 &&
-					naturalCompareTo(javaVersion, "1.6.0") < 0;
-
-			this.result = new StringBuffer();
-
-			preRefactor();
-			preRefactoringChanges = differences;
-
-			refactor();
-			afterRefactor();
-		}
-
-		/**
-		 * Returns the current result of the refactoring.
-		 */
-		@Override
-		public String toString()
-		{
-			return result.toString();
-		}
-
-		/**
-		 * Indicates whether a particular flag is set or not.
-		 * 
-		 * @param f
-		 *            the flag to test
-		 * @return <code>true</code> if the particular flag is set
-		 */
-		boolean has(int f)
-		{
-			return (flags & f) != 0;
-		}
-
-		/**
-		 * <p>
-		 * Used in the loop that matches parts for the current refactoring step.
-		 * </p>
-		 * 
-		 * <p>Sets {@link #match} to the matched string, and sets {@link #group}
-		 * to the index for the first non-null capture group.</p>
-		 * 
-		 * @return true if the current loop should be skipped
-		 */
-		private boolean loopSetup()
-		{
-			match = matcher.group();
-			group = getUsedGroup(matcher);
-
-			return false;
-		}
-
-		/**
-		 * Steps taken to prepare the regular expression to be refactored
-		 */
-		private void preRefactor()
-		{
-			text = regex.toString();
-			matcher = preRefactor.matcher(regex);
-
-			// add a map from group 0 to group 0
-			// TODO: add occurrence??
-			addUnnamedGroup("[0][1]", 0);
-			setOccurrences("[0]", 1);
-
-			while (matcher.find()) {
-				if (loopSetup())
-					continue;
-
-				if (group == 1) {
-					/*
-					 * matches
-					 * "(?onFlags-offFlags)" or "(?onFlags-offFlags:"
-					 * (also matches a non-capture group
-					 * - onFlags/offFlags are omitted)
-					 * 
-					 * group: onFlags (empty string if none)
-					 * group + 1: offFlags
-					 * (empty string if none; null, if omitted)
-					 * 
-					 * (2 groups)
-					 */
-
-					if (!inCharClass())
-						preRefactorFlags();
-				} else if (group >= 3 && group <= 8) {
-					/*
-					 * matches a named capture group
-					 * "(?<name>" (form 0)
-					 * "(?'name'" (form 1)
-					 * "(?P<name>" (form 2)
-					 * 
-					 * group: everything after first symbol
-					 * group + 1: the name
-					 * (6 groups)
-					 */
-
-					if (!inCharClass()) {
-						int form = (group - 3) / 2;
-						preRefactorCaptureGroup(FOR_NAME, form);
-					}
-				} else if (group == 9) {
-					/*
-					 * matches an unnamed capture group "("
-					 * - not followed by a "?"
-					 * 
-					 * group: everything (1 group)
-					 */
-
-					if (!inCharClass()) {
-						int form = group - 9;
-						preRefactorCaptureGroup(!FOR_NAME, form);
-					}
-				} else if (group >= 10 && group <= 14) {
-					/*
-					 * matches a back reference (by name)
-					 * "\g{name}" (form 0)
-					 * "\k<name>" (form 1)
-					 * "\k'name'" (form 2)
-					 * "\k{name}" (form 3)
-					 * "(?P=name)" (form 4)
-					 * 
-					 * group : the name
-					 * (<name> can only be an "any group" (e.g. groupName[0]))
-					 * (5 groups)
-					 */
-
-					if (!inCharClass())
-						preRefactorBackreference();
-				} else if (group == 15) {
-					/*
-					 * matches an assert condition
-					 * "(?(?=)", "(?(?!)", "(?(?<=)", or "(?(?<!)"
-					 * 
-					 * group: the assert part (inside the parentheses)
-					 * (1 group)
-					 */
-
-					if (!inCharClass())
-						preRefactorAssertCondition();
-				} else if (group == 16) {
-					/*
-					 * matches a reference condition (by number) matches
-					 * "(?(n)" or "(?(-n)"
-					 * 
-					 * group: the number (1 group)
-					 */
-
-					if (!inCharClass()) {
-						int form = group - 16;
-						preRefactorConditionalPattern(!FOR_NAME, form);
-					}
-				} else if (group >= 17 && group <= 25) {
-					/*
-					 * matches a reference condition (by name)
-					 * "(?(<name>)" (form 0),
-					 * "(?('name')" (form 1), or
-					 * "(?(name)" (form 2)
-					 * 
-					 * group: everything after first symbol (excluding ")")
-					 * group + 1: the name
-					 * group + 2: the occurrence (if specified)
-					 * (9 groups)
-					 */
-
-					if (!inCharClass()) {
-						int form = (group - 17) / 3;
-						preRefactorConditionalPattern(FOR_NAME, form);
-					}
-				} else if (group == 26) {
-					/*
-					 * matches comment group
-					 * "(?#comment) - comment cannot contain ")"
-					 * 
-					 * group: everything
-					 * (1 group)
-					 */
-
-					if (!inCharClass()) {
-						if (!match.endsWith(")"))
-							throw error(UNCLOSED_COMMENT, matcher.end());
-
-						// remove (in internal pattern)
-						replaceWith("");
-					}
-				} else if (group == 27) {
-					/*
-					 * matches a "branch reset" subpattern "(?|"
-					 * 
-					 * group: everything
-					 * (1 group)
-					 */
-
-					if (!inCharClass())
-						preRefactorBranchReset();
-				} else {
-					preRefactorOthers();
-				}
-			}
-
-			unnamedGroupCount = unnamedGroup;
-			setCapturingGroupCount(currentGroup);
-			setOccurrences("", currentGroup);
-
-			if (has(DOTNET_NUMBERING)) {
-				// for each named group, mark the occurrences as 1
-				// for its respective number group
-				// (doesn't affect named groups in "branch reset" patterns)
-
-				for (int i = 1; i <= namedGroup; i++) {
-					int groupIndex = unnamedGroupCount + i;
-					setOccurrences("[" + groupIndex + "]", 1);
-				}
-
-				int currentNamedGroup = 0;
-
-				for (Entry<Integer, String> entry : perlGroupMapping()
-						.entrySet()) {
-					String mappingName = entry.getValue();
-
-					if (mappingName.charAt(0) != '[') {
-						// a named group - using mapping name of unnamed group
-
-						currentNamedGroup++;
-						String groupName = wrapIndex(unnamedGroupCount
-								+ currentNamedGroup);
-
-						mappingName = getMappingName(groupName, 0);
-						entry.setValue(mappingName);
-					}
-				}
-			}
-
-			setGroupNameOccurrences(new HashMap<String, Integer>(
-					groupNameOccurrences));
-
-			for (String groupName : anyGroupReferences) {
-				if (groupCount(groupName) != 1)
-					requiresTestingGroup.add(getMappingName(groupName, 0));
-			}
-
-			matcher.appendTail(result);
-		}
-
-		/**
-		 * Refactors the regular expression
-		 */
-		private void refactor()
-		{
-			text = result.toString();
-			matcher = getRefactorPattern().matcher(result);
-			reset();
-
-			while (matcher.find()) {
-				if (loopSetup())
-					continue;
-
-				if (group == 1) {
-					/*
-					 * matches "(?onFlags-offFlags)" or "(?onFlags-offFlags:"
-					 * (also matches a non-capture group
-					 * - onFlags/offFlags are omitted)
-					 * 
-					 * group: onFlags (empty string if none)
-					 * group + 1: offFlags
-					 * (empty string if none; null, if omitted)
-					 * (2 groups)
-					 */
-
-					if (!inCharClass())
-						refactorFlags();
-				} else if (group >= 3 && group <= 5) {
-					/*
-					 * matches a named capture group
-					 * "(?<name>" (form 0)
-					 * "(?'name'" (form 1)
-					 * "(?P<name>" (form 2)
-					 * 
-					 * group: the name
-					 * (3 groups)
-					 */
-
-					if (!inCharClass())
-						refactorCaptureGroup(FOR_NAME);
-				} else if (group == 6) {
-					/*
-					 * matches an unnamed capture group
-					 * "(" - not followed by a "?"
-					 * 
-					 * group: everything
-					 * (1 group)
-					 */
-
-					if (!inCharClass())
-						refactorCaptureGroup(!FOR_NAME);
-				} else if (group >= 7 && group <= 10) {
-					/*
-					 * matches a back reference (by number)
-					 * "\n" (form 0)
-					 * "\gn" (form 1)
-					 * "\g{n}" or "\g{-n}" (form 2)
-					 * 
-					 * group: the number
-					 * last group: the next character (if a digit)
-					 * (4 groups)
-					 */
-
-					if (!inCharClass() || group == 7) {
-						int form = group - 7;
-						int digitGroup = 10;
-						refactorBackreference(!FOR_NAME, form, digitGroup);
-					}
-				} else if (group >= 11 && group <= 26) {
-					/*
-					 * matches a back reference (by name)
-					 * "\g{name}" (form 0)
-					 * "\k<name>" (form 1)
-					 * "\k'name'" (form 2)
-					 * "\k{name}" (form 3)
-					 * "(?P=name)" (form 4)
-					 * 
-					 * group: everything after the first symbol
-					 * group + 1: the name
-					 * group + 2: the occurrence (if specified)
-					 * last group: the next character (if a digit)
-					 * (16 groups)
-					 */
-
-					if (!inCharClass()) {
-						int form = (group - 11) / 3;
-						int digitGroup = 26;
-						refactorBackreference(FOR_NAME, form, digitGroup);
-					}
-				} else if (group == 27) {
-					/*
-					 * matches an assert condition
-					 * "(?(?=)", "(?(?!)", "(?(?<=)", or "(?(?<!)"
-					 * 
-					 * group: the assert part (inside the parentheses)
-					 * (1 group)
-					 */
-
-					if (!inCharClass())
-						refactorAssertCondition();
-				} else if (group == 28) {
-					/*
-					 * matches a conditional pattern (by number)
-					 * "(?(n)" or "(?(-n)" (form 0)
-					 * 
-					 * group: the number
-					 * (1 group)
-					 */
-
-					if (!inCharClass())
-						refactorConditionalPattern(!FOR_NAME);
-				} else if (group >= 29 && group <= 34) {
-					/*
-					 * matches a named reference condition
-					 * "(?(<name>)" (form 0),
-					 * "(?('name')" (form 1), or
-					 * "(?(name)" (form 2)
-					 * 
-					 * group: the name
-					 * group + 1: the occurrence (if specified)
-					 * (6 groups)
-					 */
-
-					if (!inCharClass())
-						refactorConditionalPattern(FOR_NAME);
-				} else if (group == 35) {
-					/*
-					 * matches a "branch reset" subpattern "(?|"
-					 * 
-					 * group: everything
-					 * (1 group)
-					 */
-
-					if (!inCharClass()) {
-						refactorBranchReset();
-					}
-				} else if (group == 36) {
-					/*
-					 * matches a numeric range
-					 * "(?Z[start..end])" or "(?NZ[start..end])"
-					 * 
-					 * group: "Z" or "NZ" (optional base and L/U)
-					 * //group + 1: "r" for raw mode, or <null>
-					 * group + 1: start
-					 * group + 2: end
-					 * (3 groups)
-					 */
-
-					if (!inCharClass())
-						refactorNumericRange();
-				} else {
-					refactorOthers();
-				}
-			}
-
-			if (parenthesisDepth > 0)
-				throw error(UNCLOSED_GROUP, text.length());
-
-			matcher.appendTail(result);
-		}
-
-		/**
-		 * Steps taken after the regular expression is refactored
-		 */
-		private void afterRefactor()
-		{
-			text = result.toString();
-			matcher = afterRefactor.matcher(result);
-			reset();
-
-			while (matcher.find()) {
-				if (loopSetup())
-					continue;
-
-				if (group == 1) {
-					/*
-					 * matches:
-					 * "\g{##group-mappingName}"
-					 * "\g{##branchGroup-mappingName}"
-					 * "\g{##test-mappingName}"
-					 * "\g{##testF-mappingName}"
-					 * 
-					 * group: the number - mapped to the position to show the
-					 * error
-					 * group + 1: type ("group", "test", or "testF")
-					 * group + 2: mappingName
-					 * (3 groups)
-					 */
-					if (!inCharClass()) {
-						String groupType = matcher.group(group + 1);
-						String mappingName = matcher.group(group + 2);
-
-						if (groupType.equals("group")) {
-							replaceWith(acceptGroup(mappingName));
-						} else if (groupType.equals("branchGroup")) {
-							replaceWith(acceptBranchReset(mappingName));
-						} else if (groupType.equals("test")) {
-							replaceWith(acceptTestingGroup(mappingName));
-						} else if (groupType.equals("testF")) {
-							replaceWith(failTestingGroup(mappingName));
-						}
-					}
-				} else if (group == 4) {
-					/*
-					 * matches "(?onFlags-offFlags)" or "(?onFlags-offFlags:"
-					 * (also matches a non-capture group - onFlags/offFlags are
-					 * omitted)
-					 * 
-					 * group: onFlags (empty string if none)
-					 * group + 1: offFlags (empty string if none; null, if
-					 * omitted)
-					 * (2 groups)
-					 */
-
-					if (!inCharClass())
-						afterRefactorFlags();
-				} else if (group == 6) {
-					/*
-					 * matches "\x{hhh..} - a hex code"
-					 * 
-					 * group: the number
-					 * (1 group)
-					 */
-
-					afterRefactorHexUnicode();
-				} else if (group == 7) {
-					/*
-					 * matches "\xh" or "\xhh" - a hex code
-					 * 
-					 * group: the number
-					 * (1 group)
-					 */
-
-					afterRefactorHexChar();
-				} else if (group == 8) {
-					/*
-					 * matches a unicode character
-					 * 
-					 * group: the number
-					 * (1 group)
-					 */
-
-					afterRefactorUnicode();
-				} else if (group == 9) {
-					/*
-					 * matches a POSIX character class
-					 * 
-					 * group: "^" or "" (whether to negate or not)
-					 * group + 1: the class name
-					 * (2 group)
-					 */
-					afterRefactorPosixClass();
-				} else if (group == 11) {
-					/*
-					 * matches a control character - \cA through \cZ
-					 * 
-					 * These are equivalent to \x01 through \x1A (26 decimal).
-					 * 
-					 * group: the control character's letter
-					 * (either upper and lower case are allowed)
-					 * (1 group)
-					 */
-
-					afterRefactorControlCharacter();
-				} else if (group == 12) {
-					/*
-					 * matches an unnamed capture group "(" - not followed by a
-					 * "?"
-					 * 
-					 * group: everything (1 group)
-					 */
-
-					if (!inCharClass())
-						afterRefactorCaptureGroup();
-				} else {
-					afterRefactorOthers();
-				}
-			}
-
-			matcher.appendTail(result);
-		}
-
-		/**
-		 * <p>
-		 * Returns whether the specified mapping name is an "any group".
-		 * </p>
-		 * 
-		 * <p>
-		 * <b>Note</b>: these are groups with an occurrence of 0, for example,
-		 * "groupName[0]". However "[0]" is not an "any group", but instead
-		 * refers to the match itself.
-		 * </p>
-		 * 
-		 * <p>
-		 * Any groups allow referring to the first matched group in the case of
-		 * multiple groups with the same name. If there is only one group, the
-		 * "any group" is the first group.
-		 * </p>
-		 * 
-		 * @param mappingName
-		 *            the mapping name for the group
-		 * @return <code>true</code> if the given group is an "any group"
-		 */
-		private boolean isAnyGroup(String mappingName)
-		{
-			// greater than, because "[0]" is not an "any group"
-			// (requires a group name)
-			return mappingName.length() > "[0]".length()
-					&& mappingName.endsWith("[0]");
-		}
-
-		/**
-		 * Removes the trailing "[0]" for the inputted "any group".
-		 * 
-		 * @param mappingName
-		 *            must be an "any group"
-		 * @return the group name for this "any group"
-		 */
-		private String anyGroupName(String mappingName)
-		{
-			return mappingName.substring(0, mappingName.length()
-					- "[0]".length());
-		}
-
-		/**
-		 * Surrounds the passed string in a non-capture group.
-		 * 
-		 * <p><b>Note</b>: If the pattern is compiled with the
-		 * {@link Pattern#ONLY_CAPTURING_GROUPS} flag, then the group will be a
-		 * capture group, and the {@link #totalGroups} will increase by one to
-		 * reflect this.</p>
-		 * 
-		 * @param str
-		 *            the string to surround
-		 * @return the RegEx for the given string surrounded by a non-capture
-		 *         group.
-		 */
-		private String nonCaptureGroup(String str)
-		{
-			return startNonCaptureGroup() + str + ")";
-		}
-
-		/**
-		 * Returns the string that represents the start of a non-capture group,
-		 * "(?:".
-		 * 
-		 * @return the string that represents the start of a non-capture group
-		 */
-		private String startNonCaptureGroup()
-		{
-			// if (!supportedSyntax(NONCAPTURE_GROUPS)) {
-			// totalGroups++;
-			// return "(";
-			// } else
-			return "(?:";
-		}
-
-		/**
-		 * Returns a regular expression that matches the capture group with the
-		 * given mapping name.
-		 * 
-		 * @param mappingName
-		 *            the mapping name for the group to accept
-		 * @return a "raw" RegEx that matches the capture group with the given
-		 *         mapping name
-		 */
-		private String acceptGroup(String mappingName)
-		{
-			String accept;
-
-			if (isAnyGroup(mappingName))
-				accept = anyGroup(mappingName);
-			else {
-				int mappedIndex = getMappedIndex(mappingName);
-
-				if (invalidForwardReference(mappedIndex))
-					throw invalidForwardReference();
-
-				accept = "\\" + mappedIndex;
-			}
-
-			return accept;
-		}
-
-		/**
-		 * Returns a regular expression that matches any one of the groups
-		 * with the given group name.
-		 * 
-		 * @param mappingName
-		 *            group name with an occurrence of 0, an "any group"
-		 * @return a regular expression that matches any one of the groups with
-		 *         the given group name
-		 */
-		private String anyGroup(String mappingName)
-		{
-			if (mappingName.charAt(0) == '[') {
-				// ex. [1][0] - (i.e. an unnamed group)
-				return acceptBranchReset(mappingName);
-			}
-
-			// remove trailing "[0]"
-			String groupName = anyGroupName(mappingName);
-
-			int groupCount = groupCount(groupName);
-			StringBuilder acceptAny = new StringBuilder();
-			StringBuilder previousGroups = new StringBuilder();
-
-			for (int i = 1; i <= groupCount; i++) {
-				String tmpMappingName = getMappingName(groupName, i);
-				int testingGroup = getTestingGroup(tmpMappingName);
-				int mappedIndex = getMappedIndex(tmpMappingName);
-
-				if (invalidForwardReference(mappedIndex))
-					continue;
-
-				acceptAny.append(previousGroups).append("\\").append(
-						mappedIndex).append('|');
-
-				previousGroups.append(failTestingGroup(testingGroup));
-			}
-
-			if (acceptAny.length() == 0)
-				throw invalidForwardReference();
-
-			return acceptAny.deleteCharAt(acceptAny.length() - 1).toString();
-		}
-
-		/**
-		 * Returns a regular expression that matches any one of the groups
-		 * in a "branch reset" subpattern with the given group name.
-		 * 
-		 * @param mappingName
-		 *            group name with an occurrence of 0, an "any group"
-		 * @return a regular expression that matches any one of the groups in a
-		 *         "brach reset" subpattern with the given group name
-		 */
-		private String acceptBranchReset(String mappingName)
-		{
-			// remove trailing "[0]"
-			String groupName = anyGroupName(mappingName);
-
-			int groupCount = groupCount(groupName);
-			StringBuilder acceptAnyBranch = new StringBuilder();
-
-			for (int i = 1; i <= groupCount; i++) {
-				String tmpMappingName = getMappingName(groupName, i);
-				int mappedIndex = getMappedIndex(tmpMappingName);
-
-				if (invalidForwardReference(mappedIndex))
-					continue;
-
-				acceptAnyBranch.append("\\").append(mappedIndex).append('|');
-			}
-
-			if (acceptAnyBranch.length() == 0)
-				throw invalidForwardReference();
-
-			return acceptAnyBranch.deleteCharAt(acceptAnyBranch.length() - 1)
-					.toString();
-		}
-
-		/**
-		 * <p>
-		 * Returns a regular expression that matches the given target group.
-		 * </p>
-		 */
-		private String acceptTestingGroup(int targetGroup)
-		{
-			return "(?=\\" + targetGroup + ")";
-		}
-
-		/**
-		 * Returns a regular expression which will match the testing group(s)
-		 * associated with the specified mapping name.
-		 */
-		private String acceptTestingGroup(String mappingName)
-		{
-			String accept;
-
-			if (isAnyGroup(mappingName))
-				accept = anyCondition(mappingName);
-			else {
-				Integer testingGroup = getTestingGroup(mappingName);
-
-				if (testingGroup == null)
-					throw error(INTERNAL_ERROR, -1);
-
-				if (invalidForwardReference(testingGroup))
-					throw invalidForwardReference();
-
-				accept = "\\" + testingGroup;
-			}
-
-			return "(?=" + accept + ")";
-		}
-
-		/**
-		 * <p>
-		 * Returns a regular expression which fails if the specified target
-		 * group matches.
-		 * </p>
-		 */
-		private String failTestingGroup(int targetGroup)
-		{
-			return "(?!\\" + targetGroup + ")";
-		}
-
-		/**
-		 * Returns a regular expression which fails if the testing group(s)
-		 * associated with the specified mapping name matches.
-		 */
-		private String failTestingGroup(String mappingName)
-		{
-			String fail;
-
-			if (isAnyGroup(mappingName))
-				fail = anyCondition(mappingName);
-			else {
-				int testingGroup = getTestingGroup(mappingName);
-
-				if (invalidForwardReference(testingGroup))
-					throw invalidForwardReference();
-
-				fail = "\\" + testingGroup;
-			}
-
-			return "(?!" + fail + ")";
-		}
-
-		/**
-		 * Returns a regular expression that matches any one of the
-		 * "testing groups" associated with the given mapping name.
-		 * 
-		 * @param mappingName
-		 *            group name with an occurrence of 0, an "any group"
-		 * @return a RegEx that matches any one of the "testing groups"
-		 *         associated with the given mapping name
-		 */
-		private String anyCondition(String mappingName)
-		{
-			// remove trailing "[0]"
-			String groupName = anyGroupName(mappingName);
-
-			int groupCount = groupCount(groupName);
-			StringBuilder acceptAny = new StringBuilder();
-
-			for (int i = 1; i <= groupCount; i++) {
-				String tmpMappingName = getMappingName(groupName, i);
-				int testingGroup = getTestingGroup(tmpMappingName);
-
-				if (invalidForwardReference(testingGroup))
-					continue;
-
-				acceptAny.append("\\").append(testingGroup).append('|');
-			}
-
-			if (acceptAny.length() == 0)
-				throw invalidForwardReference();
-
-			return acceptAny.deleteCharAt(acceptAny.length() - 1).toString();
-		}
-
-		/**
-		 * Returns a regular expression that always fails
-		 * 
-		 * @return a regular expression that always fails
-		 */
-		private String fail()
-		{
-			return "\\b\\B";
-		}
-
-		/**
-		 * Adds a mapping for the specified unnamed group.
-		 * 
-		 * @param mappingName
-		 *            the mapping name
-		 * @param targetGroupIndex
-		 *            the actual group number (in the internal pattern)
-		 */
-		private void addUnnamedGroup(String mappingName, int targetGroupIndex)
-		{
-			addGroup(mappingName, targetGroupIndex);
-		}
-
-		/**
-		 * Adds a mapping for the specified named group.
-		 * 
-		 * @param mappingName
-		 *            the mapping name
-		 * @param targetGroupIndex
-		 *            the actual group number (in the internal pattern)
-		 */
-		private void addNamedGroup(String mappingName, int targetGroupIndex)
-		{
-			addGroup(mappingName, targetGroupIndex);
-		}
-
-		/**
-		 * Adds a mapping from <code>mappingName</code> to
-		 * <code>targetGroupIndex</code> to the group mapping
-		 * 
-		 * @param mappingName
-		 *            the mapping name
-		 * @param targetGroupIndex
-		 *            the actual group number (in the internal pattern)
-		 */
-		private void addGroup(String mappingName, int targetGroupIndex)
-		{
-			getGroupMapping().put(mappingName, targetGroupIndex);
-		}
-
-		/**
-		 * Adds a new mapping to {@link #testConditionGroups}.
-		 * 
-		 * @param mappingName
-		 *            the mapping name
-		 * @param targetGroupIndex
-		 *            the actual group number (in the internal pattern)
-		 */
-		private void addTestingGroup(String mappingName, int targetGroupIndex)
-		{
-			testConditionGroups.put(mappingName, targetGroupIndex);
-		}
-
-		/**
-		 * <p>
-		 * Returns the absolute group number associated with the match.
-		 * </p>
-		 * 
-		 * <p>
-		 * If the group number is relative, then it is converted to an absolute
-		 * occurrence
-		 * </p>
-		 * 
-		 * TODO: modify function name
-		 * 
-		 * @param occurrences
-		 *            the total number of occurrences of the group name (used to
-		 *            from relative index to absolute)
-		 * @return the absolute group number associated with the match
-		 */
-		private String getAbsoluteGroup(String groupOccurrence, int occurrences)
-		{
-			// boolean hasPlus = groupOccurrence.charAt(0) == '+';
-			// int groupIndex = Integer.parseInt(hasPlus
-			// ? groupOccurrence.substring(1) : groupOccurrence);
-
-			int groupIndex = Integer.parseInt(groupOccurrence);
-
-			// if (hasPlus) {
-			// // groupIndex is relative
-			// // e.g. +1 with occurrences == 5 -> 6
-			// groupIndex += occurrences;
-			// } else
-			if (groupOccurrence.charAt(0) == '-') {
-				// groupIndex is relative
-				// e.g. -1 with occurrences == 5 -> 5
-				groupIndex += occurrences + 1;
-
-				if (groupIndex <= 0)
-					return neverUsedMappingName();
-
-				if (has(DOTNET_NUMBERING))
-					return getPerlGroup(groupIndex);
-			}
-
-			return getMappingName(groupIndex, 0);
-		}
-
-		/**
-		 * Returns a String that is never used as a mapping name
-		 * 
-		 * @return
-		 */
-		private String neverUsedMappingName()
-		{
-			return "$neverUsed";
-		}
-
-		private String getAbsoluteNamedGroup(String groupName,
-				String groupOccurrence)
-		{
-			int occurrences = getOccurrences(groupName);
-
-			// boolean hasPlus = groupOccurrence.charAt(0) == '+';
-			// int groupIndex = Integer.parseInt(hasPlus
-			// ? groupOccurrence.substring(1) : groupOccurrence);
-
-			int groupIndex = Integer.parseInt(groupOccurrence);
-
-			// if (hasPlus) {
-			// // groupIndex is relative
-			// // e.g. +1 with occurrences == 5 -> 6
-			// groupIndex += occurrences;
-			// } else
-			if (groupOccurrence.charAt(0) == '-') {
-				// groupIndex is relative
-				// e.g. -1 with occurrences == 5 -> 5
-				groupIndex += occurrences + 1;
-
-				if (groupIndex <= 0)
-					return neverUsedMappingName();
-			}
-
-			return getMappingName(groupName, groupIndex);
-		}
-
-		/**
-		 * TODO: modify function name
-		 * 
-		 * @param groupName
-		 *            the group name whose group index is returned
-		 * @return the group index
-		 */
-		private String getGroupIndex(String groupName, String groupOccurrence)
-		{
-			if (groupOccurrence == null) {
-				// TODO: e.g. groupName
-				return getMappingName(groupName, 0);
-			} else if (groupName.length() == 0) {
-				return getAbsoluteGroup(groupOccurrence, currentGroup);
-			} else {
-				return getAbsoluteNamedGroup(groupName, groupOccurrence);
-			}
-		}
-
-		/**
-		 * Returns the mapping from perl group numbers to actual group number
-		 * 
-		 * @return
-		 */
-		private HashMap<Integer, String> perlGroupMapping()
-		{
-			if (perlGroupMapping == null)
-				perlGroupMapping = new HashMap<Integer, String>();
-
-			return perlGroupMapping;
-		}
-
-		private String getPerlGroup(int groupIndex)
-		{
-			return perlGroupMapping().get(groupIndex);
-		}
-
-		/**
-		 * Returns the group index for the testing group associated with the
-		 * given mapping name.
-		 * 
-		 * @param mappingName
-		 *            the mapping name
-		 * @return the group index for the testing group associated with the
-		 *         given mapping name
-		 */
-		private Integer getTestingGroup(String mappingName)
-		{
-			return testConditionGroups.get(mappingName);
-		}
-
-		/**
-		 * Add a mapping from integer (incremental) to the position of the match
-		 * as an "in case of error" trace
-		 * 
-		 * @param errorIndex
-		 *            position to show error
-		 * 
-		 * @return the integer key for the added mapping
-		 */
-		private Integer addErrorTrace(int errorIndex)
-		{
-			if (errorTrace == null)
-				errorTrace = new HashMap<Integer, Integer>(2);
-
-			Integer key = errorTrace.size();
-			errorTrace.put(errorTrace.size(), errorIndex);
-
-			return key;
-		}
-
-		private PatternSyntaxException invalidForwardReference()
-		{
-			int index = errorTrace.get(Integer.valueOf(matcher.group(group)));
-
-			index = preRefactoringChanges.getOriginalIndex(index);
-
-			return new PatternSyntaxException(INVALID_FORWARD_REFERENCE, regex,
-					index);
-		}
-
-		/**
-		 * Indicates whether the given index is an invalid forward reference
-		 * 
-		 * @param mappedIndex
-		 *            the index for the group in the internal
-		 *            <code>Matcher</code>
-		 * @return <code>true</code> if the given index is an invalid forward
-		 *         reference
-		 */
-		private boolean invalidForwardReference(int mappedIndex)
-		{
-			if (isJava1_5 && mappedIndex > totalGroups + 1)
-				return true;
-
-			return mappedIndex > totalGroups && mappedIndex >= 10;
-		}
-
-		/**
-		 * Returns the number of occurrences of the given group name.
-		 * 
-		 * @param groupName
-		 *            the group name
-		 * @return the number of occurrences of the given group name
-		 */
-		private int getOccurrences(String groupName)
-		{
-			// if (groupName.length() == 0)
-			// return currentGroup;
-
-			Integer occurrence = groupNameOccurrences.get(groupName);
-			return (occurrence == null ? 0 : occurrence);
-		}
-
-		/**
-		 * Sets the number of occurrences of the give group name
-		 * 
-		 * @param groupName
-		 *            the group name
-		 * @param occurrences
-		 *            the number of occurrences
-		 */
-		private void setOccurrences(String groupName, int occurrences)
-		{
-			groupNameOccurrences.put(groupName, occurrences);
-		}
-
-		/**
-		 * Increases the occurrence count for the given group name by one.
-		 * 
-		 * @param groupName
-		 *            the group name whose occurrence count to increase
-		 * 
-		 * @return the (new) number of occurrences for the given group name
-		 */
-		private int nextOccurrence(String groupName)
-		{
-			@SuppressWarnings("hiding")
-			int occurrence = getOccurrences(groupName) + 1;
-
-			// store the new occurrence count
-			setOccurrences(groupName, occurrence);
-
-			return occurrence;
-		}
-
-		/**
-		 * Returns whether the current parenthesis depth matches the parenthesis
-		 * depth of the top-most match state
-		 * 
-		 * @param matchStates
-		 *            a stack of states
-		 * @return whether the current parenthesis depth matches the parenthesis
-		 *         depth of the top-most match state
-		 */
-		private boolean atRightDepth(Stack<? extends State> matchStates)
-		{
-			if (matchStates.size() == 0)
-				return false;
-
-			return matchStates.peek().getParenthesisDepth() == parenthesisDepth;
-		}
-
-		/**
-		 * Increases the parenthesis depth by one.
-		 * 
-		 * @param duringPreRefactor
-		 *            whether this function call occurs during the pre-refactor
-		 *            step
-		 */
-		private void increaseParenthesisDepth(boolean duringPreRefactor)
-		{
-			parenthesisDepth++;
-			flagsStack.push(flags);
-		}
-
-		/**
-		 * Increases the current group.
-		 * 
-		 * @param duringPreRefactor
-		 *            whether this function call occurs during the pre-refactor
-		 *            step
-		 */
-		private void increaseCurrentGroup(boolean duringPreRefactor)
-		{
-			currentGroup++;
-
-			if (!duringPreRefactor) {
-				// if (digitCount(currentGroup) != digitCount(currentGroup - 1))
-				// matcher.usePattern(getRefactorPattern(currentGroup));
-
-				totalGroups++;
-			}
-		}
-
-		/**
-		 * Steps to perform when encountering an close parenthesis.
-		 * 
-		 * @param duringPreRefactor
-		 *            whether this function call occurs during the pre-refactor
-		 *            step
-		 */
-		private void decreaseParenthesisDepth(boolean duringPreRefactor)
-		{
-			parenthesisDepth--;
-			flags = flagsStack.pop();
-		}
-
-		/*
-		 * The below functions contain the steps to refactor a specific part of
-		 * the refactoring. The respective function is called during the
-		 * different steps in the refactoring process and for each part in the
-		 * refactoring of that step.
-		 */
-
-		/**
-		 * Modify the {@link #flags} variable to account for a change in the
-		 * flags (some
-		 * of flags may be ignored).
-		 * 
-		 * @param onFlags
-		 *            the flags that were turned on
-		 * @param offFlags
-		 *            the flags that were turned off
-		 */
-		private void setFlags(String onFlags, String offFlags)
-		{
-			if (onFlags.contains("x"))
-				flags |= COMMENTS;
-
-			if (onFlags.contains("d"))
-				flags |= UNIX_LINES;
-
-			if (offFlags != null) {
-				if (offFlags.contains("x"))
-					flags &= ~COMMENTS;
-
-				if (offFlags.contains("d"))
-					flags &= ~UNIX_LINES;
-			}
-		}
-
-		private String replaceFlags(String onFlags, String offFlags)
-		{
-			boolean flagsChanged = false;
-			StringBuilder newFlags = new StringBuilder(matcher.end()
-					- matcher.start());
-
-			if (onFlags.contains("J")) {
-				onFlags = onFlags.replace("J", "");
-				flags |= DUPLICATE_NAMES;
-				flagsChanged = true;
-			}
-
-			if (onFlags.contains("n")) {
-				onFlags = onFlags.replace("n", "");
-				flags |= EXPLICIT_CAPTURE;
-				flagsChanged = true;
-			}
-
-			newFlags.append(onFlags);
-
-			if (offFlags != null) {
-				if (offFlags.contains("J")) {
-					offFlags = offFlags.replace("J", "");
-					flags &= ~DUPLICATE_NAMES;
-					flagsChanged = true;
-				}
-
-				if (offFlags.contains("n")) {
-					offFlags = offFlags.replace("n", "");
-					flags &= ~EXPLICIT_CAPTURE;
-					flagsChanged = true;
-				}
-
-				if (offFlags.length() != 0)
-					newFlags.append('-').append(offFlags);
-			}
-
-			return flagsChanged ? newFlags.toString() : null;
-		}
-
-		/**
-		 * Refactors the flags during the pre-refactoring step
-		 */
-		private void preRefactorFlags()
-		{
-			/*
-			 * matches "(?onFlags-offFlags)" or "(?onFlags-offFlags:" (also
-			 * matches a non-capture group - onFlags/offFlags are omitted)
-			 * 
-			 * group: onFlags (empty string if none) group + 1: offFlags (empty
-			 * string if none; null, if omitted)
-			 */
-
-			String onFlags = matcher.group(group);
-			String offFlags = matcher.group(group + 1);
-
-			char ending = match.charAt(match.length() - 1);
-			boolean isGroup = ending == ')';
-
-			if (!isGroup) {
-				increaseParenthesisDepth(DURING_PREREFACTOR);
-			}
-
-			setFlags(onFlags, offFlags);
-			String newFlags = replaceFlags(onFlags, offFlags);
-
-			if (newFlags == null) {
-				// no change
-				return;
-			}
-
-			if (newFlags.length() != 0 || !isGroup)
-				replaceWith("(?" + newFlags + ending);
-			else
-				replaceWith("");
-		}
-
-		/**
-		 * Refactors the flags during the refactoring step
-		 */
-		private void refactorFlags()
-		{
-			/*
-			 * matches "(?onFlags-offFlags)" or "(?onFlags-offFlags:" (also
-			 * matches a non-capture group - onFlags/offFlags are omitted)
-			 * 
-			 * group: onFlags (empty string if none) group + 1: offFlags (empty
-			 * string if none; null, if omitted)
-			 */
-
-			String onFlags = matcher.group(group);
-			String offFlags = matcher.group(group + 1);
-
-			char ending = match.charAt(match.length() - 1);
-			boolean isGroup = ending == ')';
-
-			if (!isGroup) {
-				increaseParenthesisDepth(!DURING_PREREFACTOR);
-			}
-
-			setFlags(onFlags, offFlags);
-			// StringBuilder newFlags = new StringBuilder(matcher.end()
-			// - matcher.start());
-			//
-			// newFlags.append(onFlags);
-			//
-			// if (offFlags != null) {
-			// // if (offFlags.length() != 0)
-			// // - above condition handled in preRefactorFlags()
-			// newFlags.append('-').append(offFlags);
-			// }
-
-			// if (!supportedSyntax(NONCAPTURE_GROUPS) && !isGroup) {
-			// if (newFlags.length() == 0) {
-			// // i.e. a non-capture group "(?:RegEx)"
-			// // (convert to a capture group)
-			// replaceWith(startNonCaptureGroup());
-			// } else
-			// replaceWith(startNonCaptureGroup() + "(?" + newFlags + ")");
-			// }
-		}
-
-		/**
-		 * Refactors the flags (after the refactoring step)
-		 */
-		private void afterRefactorFlags()
-		{
-			String onFlags = matcher.group(group);
-			String offFlags = matcher.group(group + 1);
-
-			char ending = match.charAt(match.length() - 1);
-			boolean isGroup = ending == ')';
-
-			if (!isGroup) {
-				increaseParenthesisDepth(!DURING_PREREFACTOR);
-			}
-
-			setFlags(onFlags, offFlags);
-		}
-
-		/**
-		 * Refactors a capturing group during the pre-refactoring step
-		 * 
-		 * @param isNamedGroup
-		 *            whether the capture group is a named group
-		 * @param form
-		 *            the capture group's 0-based form
-		 */
-		private void preRefactorCaptureGroup(boolean isNamedGroup, int form)
-		{
-			increaseParenthesisDepth(DURING_PREREFACTOR);
-
-			if (!isNamedGroup && has(EXPLICIT_CAPTURE)) {
-				replaceWith(startNonCaptureGroup());
-				return;
-			}
-
-			increaseCurrentGroup(DURING_PREREFACTOR);
-
-			if (isNamedGroup) {
-				/*
-				 * matches a named capture group
-				 * "(?<name>" (form 0)
-				 * "(?'name'" (form 1)
-				 * "(?P<name>" (form 2)
-				 * 
-				 * group: everything after first symbol
-				 * group + 1: the name
-				 * (6 groups)
-				 */
-
-				subpatternNameExpected();
-				checkForMissingTerminator(">'>", form);
-
-				String groupName = matcher.group(group + 1);
-				int occurrence = nextOccurrence(groupName);
-
-				if (occurrence != 1 && !has(DUPLICATE_NAMES)) {
-					throw error(DUPLICATE_NAME, matcher.start(group));
-				}
-
-				String mappingName = getMappingName(groupName, occurrence);
-				addNamedGroup(mappingName, TARGET_UNKNOWN);
-
-				if (!inBranchReset()) {
-					namedGroup++;
-				} else {
-					unnamedGroup++;
-				}
-
-				if (has(DOTNET_NUMBERING)) {
-					if (!inBranchReset())
-						perlGroupMapping().put(currentGroup, mappingName);
-					else
-						perlGroupMapping().put(currentGroup,
-								getMappingName(currentGroup, 0));
-				}
-			} else {
-				unnamedGroup++;
-
-				if (has(DOTNET_NUMBERING)) {
-					String mappingName = getMappingName(unnamedGroup, 0);
-					perlGroupMapping().put(currentGroup, mappingName);
-				}
-			}
-
-			if (!has(DOTNET_NUMBERING) || inBranchReset() || !isNamedGroup) {
-				int groupIndex = has(DOTNET_NUMBERING) ? unnamedGroup
-						: currentGroup;
-
-				String groupName = wrapIndex(groupIndex);
-				int occurrence = nextOccurrence(groupName);
-				String mappingName = getMappingName(groupIndex, occurrence);
-
-				// add mapping for group index
-				addUnnamedGroup(mappingName, TARGET_UNKNOWN);
-			}
-
-			// TODO: what is named group in branch reset pattern??
-		}
-
-		/**
-		 * Checks that the necessary terminating character is present.
-		 * 
-		 * <p>
-		 * <code>Endings</code> is a string where each character is an ending.
-		 * The first character (index 0) refers to the ending for form 0, the
-		 * second character (index 1) for form 1, etc.
-		 * </p>
-		 * 
-		 * <p>
-		 * Forms that have no terminating character must occur after the
-		 * forms that do. For example, if form 3 has no ending,
-		 * <code>endings</code> would be of length 3, and characters 0 - 2 would
-		 * have the endings for forms 0 - 2.
-		 * </p>
-		 * 
-		 * <p>
-		 * In this case, if <code>form</code> was equal to three, the below
-		 * method returns successfully since there is no missing terminator -
-		 * there is no terminator at all, so there is no way that it is missing.
-		 * </p>
-		 * 
-		 * @param endings
-		 *            the endings to test
-		 * @param form
-		 *            the 0-based form
-		 * 
-		 * @throws PatternSyntaxException
-		 *             If the necessary terminator is missing
-		 */
-		private void checkForMissingTerminator(String endings, int form)
-		{
-			boolean missingTerminator = form < endings.length()
-					&& !matcher.group(group).endsWith(
-					endings.substring(form, form + 1));
-
-			if (missingTerminator) {
-				throw error(MISSING_TERMINATOR, matcher.end(group));
-			}
-		}
-
-		/**
-		 * Checks that a subpattern name is present.
-		 * 
-		 * @throws PatternSyntaxException
-		 *             If the subpattern name is missing
-		 */
-		private void subpatternNameExpected()
-		{
-			// name is blank and [occurrence] is null
-			boolean missingName = matcher.start(group + 1) ==
-					matcher.end(group + 1) && matcher.start(group + 2) == -1;
-
-			if (missingName) {
-				throw error(SUBPATTERN_NAME_EXPECTED, matcher.start(group));
-			}
-		}
-
-		/**
-		 * Refactors a capturing group during the refactoring step
-		 * 
-		 * @param isNamedGroup
-		 *            whether the group is a named group
-		 */
-		private void refactorCaptureGroup(boolean isNamedGroup)
-		{
-			increaseParenthesisDepth(!DURING_PREREFACTOR);
-			increaseCurrentGroup(!DURING_PREREFACTOR);
-
-			if (isNamedGroup && !inBranchReset()) {
-				namedGroup++;
-			} else
-				unnamedGroup++;
-
-			boolean usedInCondition;
-			String namedMappingName;
-
-			if (isNamedGroup) {
-				String groupName = matcher.group(group);
-				int occurrence = nextOccurrence(groupName);
-				namedMappingName = getMappingName(groupName, occurrence);
-
-				// add mapping for group name
-				addNamedGroup(namedMappingName, totalGroups);
-
-				usedInCondition = usedInCondition(namedMappingName)
-						|| usedInCondition(getMappingName(groupName, 0));
-			} else {
-				usedInCondition = false;
-				namedMappingName = null;
-			}
-
-			int groupIndex = getCurrentGroup(isNamedGroup && !inBranchReset());
-			String groupName = wrapIndex(groupIndex);
-			int occurrence = nextOccurrence(groupName);
-			String mappingName = getMappingName(groupName, occurrence);
-
-			// add mapping for group index
-			addUnnamedGroup(mappingName, totalGroups);
-
-			if (!usedInCondition) {
-				usedInCondition = usedInCondition(mappingName)
-						|| usedInCondition(getMappingName(groupName, 0));
-
-				if (!usedInCondition) {
-					if (isNamedGroup) {
-						// remove name part
-						replaceWith("(");
-					}
-
-					return;
-				}
-			}
-
-			// remove name part (if applicable) and convert form
-			// "(?<name>RegEx)" -> "(?:(RegEx)())"
-			replaceWith(startNonCaptureGroup() + "(");
-			increaseParenthesisDepth(!DURING_PREREFACTOR);
-
-			// add a MatchState to track where to add
-			// the necessary "()" at the end of the capture group
-			addTestGroup.push(new AddTestGroupState(mappingName,
-					parenthesisDepth,
-					namedMappingName));
-		}
-
-		private void afterRefactorCaptureGroup()
-		{
-			increaseParenthesisDepth(!DURING_PREREFACTOR);
-			increaseCurrentGroup(!DURING_PREREFACTOR);
-		}
-
-		private int getCurrentGroup(boolean isNamedGroup)
-		{
-			if (has(DOTNET_NUMBERING)) {
-				if (isNamedGroup) {
-					return unnamedGroupCount + namedGroup;
-				} else {
-					return unnamedGroup;
-				}
-			} else
-				return currentGroup;
-		}
-
-		/**
-		 * Returns whether the specified group is used as a condition
-		 * 
-		 * @param mappingName
-		 *            the mapping name for the group
-		 * 
-		 * @return <code>true</code> if the specified group is used as a
-		 *         condition; <code>false</code> otherwise.
-		 */
-		private boolean usedInCondition(String mappingName)
-		{
-			return requiresTestingGroup.contains(mappingName);
-		}
-
-		/**
-		 * Refactors a conditional pattern during the pre-refactoring step
-		 * 
-		 * @param isNamedGroup
-		 *            whether the conditional is a name or number
-		 * @param form
-		 *            the 0-based form for the conditional
-		 */
-		private void preRefactorConditionalPattern(boolean isNamedGroup,
-				int form)
-		{
-			increaseParenthesisDepth(DURING_PREREFACTOR);
-			String mappingName;
-
-			if (isNamedGroup) {
-				/*
-				 * matches a named reference condition
-				 * "(?(<name>)" (form 0),
-				 * "(?('name')" (form 1), or
-				 * "(?(name)" (form 2)
-				 * 
-				 * group: everything after first symbol (excluding ")")
-				 * group + 1: the name
-				 * (6 groups)
-				 */
-
-				// if nothing after "(?("
-				if (matcher.start(group) == matcher.end(group)) {
-					throw error(ASSERTION_EXPECTED, matcher.end(group));
-				}
-
-				checkForMissingTerminator(">'", form);
-
-				if (!match.endsWith(")")) {
-					throw error(UNCLOSED_GROUP, matcher.end(group));
-				}
-
-				String groupName = matcher.group(group + 1);
-
-				if (groupName.charAt(0) == '[') {
-					String tmpMappingName = getAbsoluteGroup(
-							unwrapIndex(groupName), currentGroup);
-
-					if (isAnyGroup(tmpMappingName)) {
-						// reference is an unnamed group
-						// (any occurrence is possible)
-						groupName = anyGroupName(tmpMappingName);
-
-						String groupOccurrence = matcher.group(group + 2);
-						mappingName = getGroupIndex(groupName, groupOccurrence);
-					} else {
-						// reference is a named group
-						// (occurrence is ignored)
-
-						mappingName = tmpMappingName;
-					}
-				} else {
-					// named group
-
-					String groupOccurrence = matcher.group(group + 2);
-					mappingName = getGroupIndex(groupName, groupOccurrence);
-				}
-			} else {
-				mappingName = getAbsoluteGroup(matcher.group(group),
-						currentGroup);
-			}
-
-			requiresTestingGroup.add(mappingName);
-
-			// add a MatchState to handle the "else" branch
-			handleElseBranch.push(new MatchState("", parenthesisDepth, -1));
-		}
-
-		/**
-		 * Refactors a conditional pattern during the refactoring step
-		 * 
-		 * @param isNamedGroup
-		 *            whether the condition is a name or number
-		 */
-		private void refactorConditionalPattern(boolean isNamedGroup)
-		{
-			increaseParenthesisDepth(!DURING_PREREFACTOR);
-			String groupName = normalizeGroupName(isNamedGroup
-					? matcher.group(group)
-					: "[" + matcher.group(group) + "]");
-
-			// start of groupName / number
-			int start = matcher.start(group);
-
-			if (groupName.equals("[0]"))
-				throw error(INVALID_CONDITION0, start);
-
-			String groupOccurrence = isNamedGroup ? matcher.group(group + 1)
-					: null;
-
-			String mappingName = getGroupIndex(groupName, groupOccurrence);
-
-			Integer mappingIndexI = getMappedIndex(mappingName);
-			Integer testConditionGroupI = getTestingGroup(mappingName);
-
-			if (isAnyGroup(mappingName)) {
-				int groupCount = groupCount(groupName);
-
-				if (groupCount == 0) {
-					// if (has(VERIFY_GROUPS))
-					throw error(NONEXISTENT_SUBPATTERN, start);
-
-					// the specified group doesn't exist
-					// replaceWith(startNonCaptureGroup() + fail());
-				} else if (!allDone(groupName, groupCount)) {
-
-					// some groups occur later on
-					replaceWith(startNonCaptureGroup() + "\\g{"
-							+ addErrorTrace(start) + "test-" + mappingName
-							+ "}");
-					testConditionGroupI = TARGET_UNKNOWN;
-				} else {
-					// all groups have already occurred
-					replaceWith(startNonCaptureGroup()
-							+ acceptTestingGroup(mappingName));
-					// TODO: need to rename condition group
-					// testConditionGroupI = BRANCH_RESET;
-					testConditionGroupI = 0;
-				}
-
-			} else if (mappingIndexI == null) {
-				// if (has(VERIFY_GROUPS))
-				throw error(NONEXISTENT_SUBPATTERN, start);
-
-				// the specified group doesn't exist
-				// replaceWith(startNonCaptureGroup() + fail());
-			} else if (testConditionGroupI == null) {
-				// the specified group exists, but occurs later
-				replaceWith(startNonCaptureGroup() + "\\g{"
-						+ addErrorTrace(start) + "test-" + mappingName + "}");
-				testConditionGroupI = TARGET_UNKNOWN;
-			} else {
-				// the specified group has already occurred
-				replaceWith(startNonCaptureGroup()
-						+ acceptTestingGroup(testConditionGroupI));
-			}
-
-			// add a MatchState to handle the "else" branch
-			handleElseBranch.push(new MatchState(mappingName, parenthesisDepth,
-					testConditionGroupI));
-		}
-
-		/**
-		 * Refactors a back reference during the pre-refactoring step
-		 */
-		private void preRefactorBackreference()
-		{
-			String groupName = matcher.group(group);
-
-			if (!isUnnamedGroup(groupName))
-				anyGroupReferences.add(groupName);
-		}
-
-		/**
-		 * Refactors a back reference during the refactoring step
-		 * 
-		 * @param isNamedGroup
-		 *            whether the back reference is by name or number
-		 * @param form
-		 *            the form for the back reference
-		 * @param digitGroup
-		 *            the index for the group which stores the digit (if any)
-		 *            that follows the back reference
-		 */
-		private void refactorBackreference(boolean isNamedGroup, int form,
-				int digitGroup)
-		{
-			String mappingName;
-			String trailingDigits = "";
-
-			// start of groupName / number
-			int start;
-
-			if (isNamedGroup) {
-				/*
-				 * matches a back reference (by name)
-				 * "\g{name}" (form 0)
-				 * "\k<name>" (form 1)
-				 * "\k'name'" (form 2)
-				 * "\k{name}" (form 3)
-				 * "(?P=name)" (form 4)
-				 * 
-				 * group: everything after first symbol
-				 * group + 1: the name
-				 * (10 groups)
-				 */
-
-				subpatternNameExpected();
-				checkForMissingTerminator("}>'})", form);
-
-				start = matcher.start(group + 1);
-				String groupName = normalizeGroupName(matcher.group(group + 1));
-				String groupOccurrence = matcher.group(group + 2);
-				mappingName = getGroupIndex(groupName, groupOccurrence);
-			} else {
-				/*
-				 * matches a back reference (by number)
-				 * "\n" (form 0)
-				 * "\gn" (form 1)
-				 * "\g{n}" or "\g{-n}" (form 2)
-				 * 
-				 * group: the number
-				 * (3 groups)
-				 */
-
-				int groupIndex;
-				start = matcher.start(group);
-
-				if (form == 0) {
-					java.util.regex.MatchResult backreference = getBackreference(
-							matcher.group(group), start);
-
-					if (backreference == null) {
-						// not a back reference (i.e. an octal code)
-						// (handled in above function call)
-						return;
-					}
-
-					groupIndex = Integer.parseInt(backreference.group(1));
-
-					// TODO: verify functionality with DOTNET_NUMBERING
-					if (groupIndex > currentGroup && groupIndex >= 10) {
-						trailingDigits = String.valueOf(groupIndex % 10);
-						groupIndex /= 10;
-					}
-
-					trailingDigits += backreference.group(2);
-					String groupName = wrapIndex(groupIndex);
-					mappingName = getMappingName(groupName, 0);
-				} else {
-					mappingName = getAbsoluteGroup(matcher.group(group),
-							currentGroup);
-				}
-			}
-
-			trailingDigits += matcher.group(digitGroup);
-
-			// retrieve the actual group index for the specified groupIndex
-			Integer mappedIndexI;
-
-			// replace back reference with back reference RegEx
-			if (isAnyGroup(mappingName)) {
-				String groupName = anyGroupName(mappingName);
-
-				if (groupName.equals("[0]"))
-					throw error(ZERO_REFERENCE, start);
-
-				int groupCount = groupCount(groupName);
-
-				if (groupCount == 0) {
-					// form 0 is \n (for unnamed group) 
-					if (isNamedGroup || form != 0 || has(VERIFY_GROUPS))
-						throw error(NONEXISTENT_SUBPATTERN, start);
-
-					replaceWith(fail() + trailingDigits);
-				} else if (groupCount == 1) {
-					String tmpMappingName = getMappingName(groupName, 1);
-					trailingDigits = fixTrailing(trailingDigits);
-
-					if (getOccurrences(groupName) == groupCount) {
-						// group has already occurred
-						replaceWith(acceptGroup(tmpMappingName)
-								+ trailingDigits);
-					} else {
-						// group occurs later on
-						replaceWith("\\g{" + addErrorTrace(start) + "group-"
-								+ tmpMappingName + "}" + trailingDigits);
-					}
-				} else if (allDone(groupName, groupCount)) {
-					// all groups have already occurred
-					String acceptGroup = acceptGroup(mappingName);
-
-					replaceWith(nonCaptureGroup(acceptGroup) + trailingDigits);
-				} else {
-					// some groups occur later on
-					replaceWith(nonCaptureGroup("\\g{"
-							+ addErrorTrace(start) + "group-"
-							+ mappingName + "}") + trailingDigits);
-				}
-			} else if ((mappedIndexI = getMappedIndex(mappingName)) == null) {
-//				if (has(VERIFY_GROUPS))
-					throw error(NONEXISTENT_SUBPATTERN, start);
-
-//				replaceWith(fail() + trailingDigits);
-			} else {
-				int mappedIndex = mappedIndexI;
-
-				trailingDigits = fixTrailing(trailingDigits);
-
-				if (mappedIndex == TARGET_UNKNOWN) {
-					// group hasn't occurred yet
-
-					replaceWith("\\g{" + addErrorTrace(start) + "group-"
-							+ mappingName + "}" + trailingDigits);
-				} else {
-					// group already occurred
-					replaceWith("\\" + mappedIndex + trailingDigits);
-				}
-			}
-		}
-
-		/**
-		 * Indicates whether the specified group name is an unnamed group
-		 * 
-		 * @param groupName
-		 *            the group name
-		 * @return <code>true</code> if, and only if, <code>groupName</code> is
-		 *         the name of an unnamed group (e.g. [1])
-		 */
-		private boolean isUnnamedGroup(String groupName)
-		{
-			return groupName.charAt(0) == '[';
-		}
-
-		/**
-		 * Indicates whether all groups with the specified group name have
-		 * already appeared
-		 * 
-		 * @param groupName
-		 *            the group name
-		 * @param groupCount
-		 *            the total number of groups with the specified name
-		 * @return <code>true</code> if, and only if, all groups with the given
-		 *         name have already appeared
-		 */
-		private boolean allDone(String groupName, int groupCount)
-		{
-			if (isUnnamedGroup(groupName)) {
-				// e.g. [1][0]
-				return getOccurrences(groupName) == groupCount;
-			} else {
-				// e.g. groupName[0]
-				return getTestingGroup(getMappingName(groupName, groupCount)) != null;
-			}
-		}
-
-		/**
-		 * Returns a regular expression that matches the given digits literally.
-		 * 
-		 * @param trailingDigits
-		 *            the literal digits that follow a back reference
-		 */
-		private String fixTrailing(String trailingDigits)
-		{
-			if (trailingDigits.length() == 0)
-				return "";
-
-			return "[" + trailingDigits.charAt(0) + "]"
-					+ trailingDigits.substring(1);
-		}
-
-		/**
-		 * Returns a <code>MatchResult</code> containing data about the back
-		 * reference.
-		 * 
-		 * @param backreference
-		 *            a string (of numbers) that make up a back reference
-		 * @param start
-		 *            the start index for the back reference (used in any thrown
-		 *            exceptions)
-		 * @return a <code>MatchResult</code> contain data about the back
-		 *         reference, or null if the <code>backreference</code> doesn't
-		 *         refer to a back reference
-		 */
-		private java.util.regex.MatchResult getBackreference(
-				String backreference, int start)
-		{
-			if (backreference.charAt(0) == '0') {
-				String input = has(PERL_OCTAL) ? backreference
-						: backreference.substring(1);
-
-				@SuppressWarnings("hiding")
-				java.util.regex.Matcher matcher = perl_octal.matcher(input);
-
-				if (!matcher.matches()) {
-					// +1 because leading '0'
-					int errorLoc = start + 1;
-					throw error(ILLEGAL_OCTAL_ESCAPE, errorLoc);
-				}
-
-				String octal = matcher.group(1);
-				String trailing = matcher.group(2);
-
-				int octalCode = Integer.parseInt(octal, 8);
-
-				String hexCode = String.format(hexCodeFormat, octalCode);
-				replaceWith(hexCode + trailing);
-
-				return null;
-			}
-
-			if (inCharClass()) {
-				if (has(PERL_OCTAL)) {
-					@SuppressWarnings("hiding")
-					java.util.regex.Matcher matcher = perl_octal
-							.matcher(backreference);
-
-					if (!matcher.matches())
-						throw error(ILLEGAL_OCTAL_ESCAPE, start);
-
-					String octal = matcher.group(1);
-					String trailing = matcher.group(2);
-
-					int octalCode = Integer.parseInt(octal, 8);
-
-					String hexCode = String.format(hexCodeFormat, octalCode);
-					replaceWith(hexCode + trailing);
-
-					return null;
-				} else {
-					// ignore back reference in character class
-					return null;
-				}
-			}
-
-			int digitCount = digitCount(currentGroup);
-
-			@SuppressWarnings("hiding")
-			java.util.regex.Pattern pattern = getDigitCountPattern(digitCount);
-			@SuppressWarnings("hiding")
-			java.util.regex.Matcher matcher = pattern.matcher(backreference);
-
-			matcher.matches();
-
-			int groupIndex = Integer.parseInt(matcher.group(1));
-			String trailing = matcher.group(2);
-
-			if (has(PERL_OCTAL) && (trailing.length() != 0 || digitCount > 1
-					&& groupIndex > currentGroup)) {
-				// an octal escape
-
-				matcher = perl_octal.matcher(backreference);
-
-				if (!matcher.matches())
-					throw error(ILLEGAL_OCTAL_ESCAPE, start);
-
-				String octal = matcher.group(1);
-				trailing = matcher.group(2);
-
-				int octalCode = Integer.parseInt(octal, 8);
-				String hexCode = String.format(hexCodeFormat, octalCode);
-				replaceWith(hexCode + trailing);
-
-				return null;
-			}
-
-			return matcher.toMatchResult();
-		}
-
-		/**
-		 * Refactors an assert condition during the pre-refactoring step
-		 */
-		private void preRefactorAssertCondition()
-		{
-			/*
-			 * matches an assert condition
-			 * "(?(?=)", "(?(?!)", "(?(?<=)", or "(?(?<!)"
-			 * group : the assert part (inside the parentheses)
-			 * (1 group)
-			 */
-
-			increaseParenthesisDepth(DURING_PREREFACTOR);
-
-			// add a MatchState to handle the "else" branch
-			handleElseBranch.push(new MatchState("", parenthesisDepth, -1));
-
-			// increase parenthesis depth to that of the assertion
-			increaseParenthesisDepth(DURING_PREREFACTOR);
-		}
-
-		/**
-		 * Refactors an assert condition during the refactoring step
-		 */
-		private void refactorAssertCondition()
-		{
-			increaseParenthesisDepth(!DURING_PREREFACTOR);
-
-			// convert form (m is the test condition group for the assertion)
-			// "(?(assert)then|else)" ->
-			// "(?:(?:(assert)())?+(?:(?:\m)then|(?!\m)else))"
-
-			// (conversion works in PCRE, but only partly in Java)
-			// does not work during repetition
-			// TODO: verify conversions work in PCRE and Java
-
-			replaceWith(startNonCaptureGroup() + startNonCaptureGroup() + "("
-					+ matcher.group(group));
-
-			// increase parenthesis depth to that of the assertion
-			increaseParenthesisDepth(!DURING_PREREFACTOR);
-			increaseParenthesisDepth(!DURING_PREREFACTOR);
-
-			handleEndAssertCond.add(new MatchState("", parenthesisDepth,
-					TARGET_UNKNOWN));
-		}
-
-		/**
-		 * Returns the mapping name associated with the event to end an assert
-		 * condition
-		 * 
-		 * @return
-		 */
-		private String endAssertCondMappingName()
-		{
-			return "$endAssertCond";
-		}
-
-		/**
-		 * Initializes a "branch reset" subpattern during the pre-refactoring
-		 * step.
-		 */
-		private void preRefactorBranchReset()
-		{
-			increaseParenthesisDepth(DURING_PREREFACTOR);
-
-			branchReset.push(new BranchResetState(currentGroup, unnamedGroup,
-					parenthesisDepth));
-		}
-
-		/**
-		 * Initializes a "branch reset" subpattern during the refactoring step.
-		 */
-		private void refactorBranchReset()
-		{
-			replaceWith(startNonCaptureGroup());
-			increaseParenthesisDepth(!DURING_PREREFACTOR);
-			branchReset.push(new BranchResetState(currentGroup, unnamedGroup,
-					parenthesisDepth));
-		}
-
-		private void refactorNumericRange()
-		{
-			String mode = matcher.group(group);
-			// boolean rawMode = matcher.group(group + 1) != null;
-			String start = matcher.group(group + 1);
-			String end = matcher.group(group + 2);
-			int endRange = matcher.end(group + 2);
-
-			if (start == null || end == null) {
-				// error is set at character after "["
-				throw error(NUMERIC_RANGE_EXPECTED, matcher.end(group) + 1);
-			}
-
-			if (endRange >= text.length() || text.charAt(endRange) != ']') {
-				throw error(UNCLOSED_RANGE, endRange);
-			}
-
-			if (!match.endsWith(")")) {
-				// error is set at character after "]"
-				throw error(UNCLOSED_GROUP, endRange + 1);
-			}
-
-			try {
-				String range = Range.range(start, end, mode);
-
-				// if (!rawMode)
-				range = nonCaptureGroup(range);
-
-				replaceWith(range);
-			} catch (PatternSyntaxException e) {
-				String desc = e.getDescription();
-				int index = e.getIndex();
-
-				if (desc.equals(INVALID_DIGIT_START)) {
-					int startIndex = matcher.start(group + 1);
-					throw error(desc, startIndex + index);
-				} else if (desc.equals(INVALID_DIGIT_END)) {
-					int endIndex = matcher.start(group + 2);
-					throw error(desc, endIndex + index);
-				}
-
-			} catch (Exception e) {
-				String message = e.getMessage();
-
-				if (message.equals(INVALID_BASE)) {
-					int errorIndex = matcher.start(group) + mode.indexOf('Z')
-							+ 1;
-					throw error(message + " in numeric range", errorIndex);
-				}
-			}
-		}
-
-		/**
-		 * Refactors the hex unicode during the after-refactoring step
-		 */
-		private void afterRefactorHexUnicode()
-		{
-			int hex = 16;
-			int codePoint;
-
-			try {
-				codePoint = Integer.parseInt(matcher.group(group), hex);
-
-				if (codePoint <= 0xFF)
-					replaceWith(String.format(hexCodeFormat, codePoint));
-				else {
-					// char[] array = Character.toChars(hexCode);
-					//					  
-					// if (array.length == 1)
-					// replaceWith(String.format("\\x{%1$04x}", (int)
-					// array[0]));
-					// else
-					// replaceWith(String.format("\\x{%1$04x}\\x{%2$04x}",
-					// (int) array[0], (int) array[1]));
-
-					if (Character.charCount(codePoint) == 1) {
-						replaceWith(String.format(unicodeFormat, codePoint));
-					} else {
-						replaceWith(new String(Character.toChars(codePoint)));
-					}
-				}
-			} catch (Exception e) {
-				throw error(INVALID_HEX_CODE, matcher.start());
-			}
-		}
-
-		/**
-		 * Refactors the hex char during the after-refactoring step
-		 */
-		private void afterRefactorHexChar()
-		{
-			String hexCode = matcher.group(group);
-
-			if (hexCode.length() == 1) {
-				// matched "\xh"
-
-				// add leading 0 (necessary for java syntax)
-				replaceWith("\\x0" + hexCode);
-			}
-		}
-
-		private void afterRefactorUnicode()
-		{
-			String unicode = matcher.group(group);
-
-			StringBuilder replacement = new StringBuilder();
-
-			replacement.append("\\u");
-
-			for (int i = unicode.length(); i < 4; i++) {
-				replacement.append('0');
-			}
-
-			replaceWith(replacement.append(unicode).toString());
-		}
-
-		private void afterRefactorPosixClass()
-		{
-			// if (patternSyntax == JAVA) {
-			if (!inCharClass())
-				throw error(POSIX_OUTSIDE_CLASS, matcher.start());
-
-			boolean negated = matcher.group(group).length() != 0;
-			String posixClass = matcher.group(group + 1);
-
-			if (posixClass.equals("word"))
-				replaceWith(negated ? "\\W" : "\\w");
-			else {
-				String value = posixClasses.get(posixClass);
-
-				if (value != null)
-					replaceWith("\\" + (negated ? "P" : "p") + "{" + value
-							+ "}");
-				else
-					throw error(UNKNOWN_POSIX_CLASS, matcher.start(group + 1));
-			}
-			// }
-		}
-
-		/**
-		 * Refactors a control character during the after-refactoring step
-		 */
-		private void afterRefactorControlCharacter()
-		{
-			char controlCharacter = matcher.group(group).charAt(0);
-			int offset;
-
-			if (controlCharacter >= 'a' && controlCharacter <= 'z')
-				offset = 'a' - 1;
-			else
-				offset = 'A' - 1;
-
-			replaceWith(String.format(hexCodeFormat, controlCharacter - offset));
-		}
-
-		/**
-		 * Refactors the remaining parts during the pre-refactoring step
-		 */
-		private void preRefactorOthers()
-		{
-			if (match.equals("(")) {
-				if (!inCharClass())
-					increaseParenthesisDepth(DURING_PREREFACTOR);
-			} else if (match.equals(")")) {
-				if (!inCharClass())
-					preRefactorCloseParenthesis();
-			} else if (match.equals("|")) {
-				if (!inCharClass())
-					preRefactorPike();
-			} else if (match.equals("[")) {
-				increaseCharClassDepth();
-			} else if (match.equals("]")) {
-				decreaseCharClassDepth();
-			} else if (match.equals("#")) {
-				if (has(COMMENTS) && !inCharClass())
-					parsePastLine();
-			} else if (match.startsWith("\\Q")) {
-				// if (!supportedSyntax(QE_QUOTATION)) {
-				if (isJava1_5) {
-					int start = 2;
-					int end = match.length() - (match.endsWith("\\E") ? 2 : 0);
-					replaceWith(literal(match.substring(start, end)));
-				}
-			}
-		}
-
-		/**
-		 * Refactors the remaining parts during the refactoring step
-		 */
-		private void refactorOthers()
-		{
-			if (match.equals("(")) {
-				if (!inCharClass())
-					increaseParenthesisDepth(!DURING_PREREFACTOR);
-			} else if (match.equals(")")) {
-				if (!inCharClass())
-					refactorCloseParenthesis();
-			} else if (match.equals("|")) {
-				if (!inCharClass())
-					refactorPike();
-			} else if (match.equals("[")) {
-				increaseCharClassDepth();
-			} else if (match.equals("]")) {
-				decreaseCharClassDepth();
-			} else if (match.equals("#")) {
-				if (has(COMMENTS) && !inCharClass())
-					parsePastLine();
-			} else if (match.equals("\\Q")) {
-				skipQuoteBlock();
-			}
-		}
-
-		/**
-		 * Refactors the remaining parts (after the refactoring step)
-		 */
-		private void afterRefactorOthers()
-		{
-			if (match.equals("(")) {
-				if (!inCharClass())
-					increaseParenthesisDepth(!DURING_PREREFACTOR);
-			} else if (match.equals(")")) {
-				if (!inCharClass())
-					afterRefactorCloseParenthesis();
-			} else if (match.equals("[")) {
-				increaseCharClassDepth();
-			} else if (match.equals("]")) {
-				decreaseCharClassDepth();
-			} else if (match.equals("#")) {
-				if (has(COMMENTS) && !inCharClass())
-					parsePastLine();
-			} else if (match.equals("\\Q")) {
-				skipQuoteBlock();
-			} else if (match.equals("\\X")) {
-				replaceWith("(?>\\P{M}\\p{M}*)");
-			}
-		}
-
-		/**
-		 * Skips from <code>\Q</code> to <code>\E</code>. If there is no
-		 * <code>\E</code>
-		 * the rest of the string is skipped.
-		 */
-		private void skipQuoteBlock()
-		{
-			int endQuote = text.indexOf("\\E", matcher.end());
-
-			if (endQuote != -1) {
-				setMatcherPosition(endQuote);
-			} else {
-				setMatcherPosition(text.length());
-			}
-		}
-
-		/**
-		 * Returns a literal pattern <code>String</code> for the specified
-		 * <code>String</code>.
-		 * 
-		 * <p>This method produces a <code>String</code> that can be used to
-		 * create
-		 * a <code>Pattern</code> that would match the string <code>s</code> as
-		 * if
-		 * it were a literal pattern.</p>
-		 * 
-		 * <p>Metacharacters or escape sequences in the input sequence
-		 * will be
-		 * given
-		 * no special meaning.</p>
-		 * 
-		 * <p><b>Note</b>: this function escapes each metacharacter
-		 * individually,
-		 * whereas {@link #quote(String)} uses a <code>\Q..\E</code> block. This
-		 * function is used when refactoring a <code>\Q..\E</code> block into a
-		 * RegEx patternSyntax that doesn't support the functionality.</p>
-		 * 
-		 * @param s
-		 *            The string to be literalized
-		 * @return A literal string replacement
-		 */
-		public String literal(String s)
-		{
-			// if (supportedSyntax(QE_QUOTATION))
-			// return quote(s);
-			//		
-			@SuppressWarnings("hiding")
-			java.util.regex.Pattern pattern = inCharClass() ?
-					escapeClassMetachars
-					: escapeMetachars;
-
-			return pattern.matcher(s).replaceAll("\\\\$0");
-		}
-
-		/**
-		 * Refactors a close parenthesis during the pre-refactoring step
-		 */
-		private void preRefactorCloseParenthesis()
-		{
-			if (parenthesisDepth == 0)
-				throw error(UNMATCHED_PARENTHESES, matcher.start());
-
-			if (atRightDepth(handleElseBranch))
-				handleElseBranch.pop();
-			else if (atRightDepth(branchReset))
-				endBranchReset();
-
-			decreaseParenthesisDepth(DURING_PREREFACTOR);
-		}
-
-		/**
-		 * Refactors a close parenthesis during the refactoring step
-		 */
-		private void refactorCloseParenthesis()
-		{
-			if (atRightDepth(addTestGroup)) {
-				decreaseParenthesisDepth(!DURING_PREREFACTOR);
-				replaceWith(")())");
-
-				totalGroups++;
-
-				String mappingName = addTestGroup.peek().mappingName;
-				String namedMappingName = addTestGroup.peek().namedMappingName;
-
-				// add a mapping from mapping name to its test condition group
-				addTestingGroup(mappingName, totalGroups);
-
-				if (namedMappingName != null) {
-					addTestingGroup(namedMappingName, totalGroups);
-				}
-
-				addTestGroup.pop();
-
-				// done last because inside pars is same depth
-				decreaseParenthesisDepth(!DURING_PREREFACTOR);
-			} else if (atRightDepth(handleElseBranch)) {
-				// no else branch for condition (i.e. only a "then" branch)
-				// e.g. (?('name')...)
-
-				// add an empty else branch
-				// if condition isn't true, matches the empty string
-
-				Integer testConditionGroupI = handleElseBranch.peek().testConditionGroupI;
-
-				if (testConditionGroupI == null) {
-					// the specified group doesn't exist,
-					// always use else branch
-					replaceWith("|)");
-				} else {
-					int testConditionGroup = testConditionGroupI;
-
-					if (testConditionGroup == TARGET_UNKNOWN) {
-						String mappingName = handleElseBranch.peek().mappingName;
-
-						// the specified group exists, but occurs later
-						replaceWith("|\\g{"
-								+ addErrorTrace(matcher.start(group))
-								+ "testF-" + mappingName + "})");
-						// } else if (testConditionGroup == BRANCH_RESET) {
-						// String mappingName =
-						// handleElseBranch.peek().mappingName;
-						//
-						// // all groups have already occurred
-						// replaceWith("|" + failTestingGroup(mappingName) +
-						// ")");
-					} else {
-						String mappingName = handleElseBranch.peek().mappingName;
-
-						StringBuilder replacement = new StringBuilder();
-
-						replacement.append('|');
-
-						if (testConditionGroup == 0) {
-							replacement.append(failTestingGroup(mappingName));
-						} else {
-							replacement
-									.append(failTestingGroup(testConditionGroup));
-						}
-
-						replacement.append(')');
-
-						if (mappingName.equals(endAssertCondMappingName())) {
-							replacement.append(')');
-							decreaseParenthesisDepth(!DURING_PREREFACTOR);
-						}
-
-						// the specified group has already occurred
-						replaceWith(replacement.toString());
-					}
-				}
-
-				// remove this pike state
-				handleElseBranch.pop();
-
-				// done last because inside pars is same depth
-				decreaseParenthesisDepth(!DURING_PREREFACTOR);
-			} else if (atRightDepth(branchReset)) {
-				endBranchReset();
-
-				// done last because inside pars is same depth
-				decreaseParenthesisDepth(!DURING_PREREFACTOR);
-			} else if (atRightDepth(handleEndAssertCond)) {
-				String mappingName = handleEndAssertCond.peek().mappingName;
-
-				if (mappingName.equals(endAssertCondMappingName())) {
-					// the end of an assert condition
-
-					replaceWith("))");
-
-					// adjust parenthesis depth
-					decreaseParenthesisDepth(!DURING_PREREFACTOR);
-					decreaseParenthesisDepth(!DURING_PREREFACTOR);
-
-					// remove the state
-					handleEndAssertCond.pop();
-				} else {
-					totalGroups++;
-
-					replaceWith(")())?+" + startNonCaptureGroup()
-							+ acceptTestingGroup(totalGroups));
-
-					// adjust parenthesis depth
-					decreaseParenthesisDepth(!DURING_PREREFACTOR);
-					decreaseParenthesisDepth(!DURING_PREREFACTOR);
-					increaseParenthesisDepth(!DURING_PREREFACTOR);
-
-					// add state to handle else branch
-					handleElseBranch.add(new MatchState(
-							endAssertCondMappingName(), parenthesisDepth,
-							totalGroups));
-
-					// remove the state
-					handleEndAssertCond.pop();
-				}
-			} else {
-				// done last because inside pars is same depth
-				decreaseParenthesisDepth(!DURING_PREREFACTOR);
-			}
-		}
-
-		/**
-		 * Refactors a close parenthesis during the after-refactoring step
-		 */
-		private void afterRefactorCloseParenthesis()
-		{
-			decreaseParenthesisDepth(!DURING_PREREFACTOR);
-		}
-
-		/**
-		 * Steps to perform at the end (closing parenthesis) of a "branch reset"
-		 * subpattern.
-		 */
-		private void endBranchReset()
-		{
-			int endGroup = branchReset.peek().endGroup;
-			int endUnnamedGroup = branchReset.peek().endUnnamedGroup;
-
-			if (endGroup > currentGroup)
-				currentGroup = endGroup;
-
-			if (endUnnamedGroup > unnamedGroup)
-				unnamedGroup = endUnnamedGroup;
-
-			branchReset.pop();
-		}
-
-		/**
-		 * Refactors a pike during the pre-refactoring step
-		 */
-		private void preRefactorPike()
-		{
-			if (atRightDepth(handleElseBranch)) {
-				if (handleElseBranch.peek().testConditionGroupI == parenthesisDepth) {
-					throw error(CONDITIONAL_BRANCHES, matcher.start(group));
-				}
-
-				handleElseBranch.peek().testConditionGroupI = parenthesisDepth;
-			} else if (atRightDepth(branchReset))
-				branchReset();
-		}
-
-		/**
-		 * Refactors a pike during the factoring step
-		 */
-		private void refactorPike()
-		{
-			if (atRightDepth(handleElseBranch)) {
-				Integer testConditionGroupI = handleElseBranch.peek().testConditionGroupI;
-				String mappingName = handleElseBranch.peek().mappingName;
-
-				if (testConditionGroupI != null) {
-					int testConditionGroup = testConditionGroupI;
-
-					if (testConditionGroup == TARGET_UNKNOWN) {
-						// the specified group exists, but occurs later
-						replaceWith("|\\g{"
-								+ addErrorTrace(matcher.start(group))
-								+ "testF-" + mappingName + "}");
-						// } else if (testConditionGroup == BRANCH_RESET) {
-						// // all groups have already occurred
-						// replaceWith("|" + failTestingGroup(mappingName));
-					} else if (testConditionGroup != 0) {
-						// specific group
-
-						replaceWith("|" + failTestingGroup(testConditionGroup));
-					} else {
-						// any group
-						replaceWith("|" + failTestingGroup(mappingName));
-					}
-				}
-				// else, the specified group doesn't exist
-				// (i.e. always use else branch) - dealt with elsewhere
-
-				handleElseBranch.pop();
-
-				if (mappingName.equals(endAssertCondMappingName()))
-					handleEndAssertCond.add(new MatchState(mappingName,
-							parenthesisDepth, testConditionGroupI));
-			} else if (atRightDepth(branchReset)) {
-				branchReset();
-			}
-		}
-
-		/**
-		 * Actions to take when matching the start of a character class
-		 */
-		private void increaseCharClassDepth()
-		{
-			charClassDepth++;
-
-			int end = matcher.end();
-			int length = text.length();
-			boolean squareBracket = end < length && text.charAt(end) == ']';
-
-			boolean negSequareBracket = end < length - 2
-					&& text.substring(end, end + 2).equals("^]");
-
-			if (squareBracket || negSequareBracket) {
-				// a "]" follows the "["
-
-				// don't count the "]" as the end of the character class
-				// increase the char class depth,
-				// (it will be decreased upon hitting the "]")
-				charClassDepth++;
-			}
-		}
-
-		/**
-		 * Actions to take when matching the end of a character class
-		 */
-		private void decreaseCharClassDepth()
-		{
-			// only decrease depth if actually in a character class
-			// otherwise, treat the "]" as literal
-
-			if (inCharClass())
-				charClassDepth--;
-		}
-
-		private boolean inCharClass()
-		{
-			return charClassDepth != 0;
-		}
-
-		/**
-		 * Sets the "cursor" in the matcher to the given position
-		 * 
-		 * @param position
-		 *            index to start the next call to {@link Matcher#find()}
-		 */
-		private void setMatcherPosition(int position)
-		{
-			// store the current pattern (restored at end)
-			java.util.regex.Pattern tmp = matcher.pattern();
-
-			int end = matcher.end();
-
-			// replace the match with itself - calls matcher.appendReplacement
-			replaceWith(matcher.group());
-
-			// append the text from the end to the current position
-			result.append(text.substring(end, position));
-
-			matcher.usePattern(EMPTY_PATTERN);
-
-			// move the cursor to the given position
-			matcher.find(position);
-
-			/*
-			 * set the last append position to <position>
-			 * (don't store the text
-			 * - since its from the beginning of the string to <position>
-			 */
-			matcher.appendReplacement(new StringBuffer(), "");
-
-			// restore the used pattern
-			matcher.usePattern(tmp);
-		}
-
-		private void parsePastLine()
-		{
-			int i = matcher.end();
-
-			while (i < text.length() && !isLineSeparator(text.charAt(i))) {
-				i++;
-			}
-
-			setMatcherPosition(i);
-		}
-
-		/**
-		 * Determines if character is a line separator in the current mode
-		 * 
-		 * @return
-		 */
-		private boolean isLineSeparator(int ch)
-		{
-			if (has(UNIX_LINES)) {
-				return ch == '\n';
-			} else {
-				return (ch == '\n' || ch == '\r' || (ch | 1) == '\u2029' || ch == '\u0085');
-			}
-		}
-
-		/**
-		 * Steps taken when entering a new branch in a "branch reset"
-		 * subpattern.
-		 */
-		private void branchReset()
-		{
-			branchReset.peek().updateEndGroup(currentGroup, unnamedGroup);
-			currentGroup = branchReset.peek().startGroup;
-			unnamedGroup = branchReset.peek().unnamedGroup;
-		}
-
-		/**
-		 * Indicates whether currently in a "branch reset" pattern
-		 * 
-		 * @return <code>true</code> if, and only if, currently in a
-		 *         "branch reset" pattern
-		 */
-		private boolean inBranchReset()
-		{
-			return branchReset.size() != 0;
-		}
-
-		/**
-		 * <p>Replace the matched string with the specified (literal)
-		 * replacement, and adds a new state to {@link #differences}.
-		 * </p>
-		 */
-		private java.util.regex.Matcher replaceWith(String replacement)
-		{
-			String quoteReplacement = Matcher.quoteReplacement(replacement);
-
-			matcher.appendReplacement(result, quoteReplacement);
-
-			// int length = matcher.end() - matcher.start();
-			int start = result.length() - quoteReplacement.length();
-			// int end = start + length;
-
-			differences.replace0(start, match, replacement);
-
-			return matcher;
-		}
-
-		/**
-		 * <p>Appends <tt>result</tt> with the specified (literal) string, and
-		 * adds a new state to {@link #differences}.</p>
-		 */
-		/*
-		 * private StringBuffer appendWith(String str)
-		 * {
-		 * differences.insert(result.length(), str);
-		 * result.append(str);
-		 * 
-		 * return result;
-		 * }
-		 */
-
-		/**
-		 * Normalizes the group name.
-		 */
-		String normalizeGroupName(String groupName)
-		{
-			if (groupName.startsWith("[0")) {
-				// group name is number with leading zeros
-				int groupIndex = Integer.parseInt(groupName.substring(1,
-						groupName.length() - 1));
-
-				return wrapIndex(groupIndex);
-			} else if (groupName.startsWith("[-")) {
-				// relative reference
-
-				int groupIndex = Integer.parseInt(groupName.substring(1,
-						groupName.length() - 1));
-
-				// groupIndex is relative
-				// e.g. -1 with currentGroup == 5 -> 5
-				groupIndex += currentGroup + 1;
-
-				if (groupIndex <= 0)
-					return neverUsedMappingName();
-
-				if (has(DOTNET_NUMBERING)) {
-					String tmpGroupName = getPerlGroup(groupIndex);
-
-					if (tmpGroupName.charAt(0) == '[') {
-						return anyGroupName(tmpGroupName);
-					}
-				} else
-					return wrapIndex(groupIndex);
-			}
-
-			return groupName;
-		}
+		return getInternalPattern();
+	}
+
+	/**
+	 * Returns this <code>Pattern</code>.
+	 * 
+	 * <p>Added for consistency for use in Groovy, since both +charSequence and +javaPattern are also supported.
+	 * This method ensures that the 'positive' operator will return a RegExPlus Pattern, for all three cases:</p>
+	 * 
+	 * <ol>
+	 * <li><b>Compiling a CharSequence regex</b>: <code>+charSequence</code></li>
+	 * <li><b>Promoting a Java Pattern</b>: <code>+javaPattern</code></li>
+	 * <li><b>When used on an existing RegExPlus Pattern</b>: <code>+regexPlusPattern</code></li>
+	 * </ol>
+	 * 
+	 * @return this <code>Pattern</code>.
+	 */
+	public Pattern positive()
+	{
+		return this;
+	}
+
+	/**
+	 * @param regex
+	 * @return
+	 * @since 0.2
+	 */
+	public Pattern or(CharSequence regex)
+	{
+		Pattern pattern1 = normalize();
+
+		return or(pattern1.pattern(), pattern1.flags(), regex, 0);
+	}
+
+	/**
+	 * 
+	 * @param pattern
+	 * @return
+	 * @since 0.2
+	 */
+	public Pattern or(Pattern pattern)
+	{
+		Pattern pattern1 = normalize();
+		Pattern pattern2 = pattern.normalize();
+
+		return or(pattern1.pattern(), pattern1.flags(), pattern2.pattern(), pattern2.flags());
+	}
+
+	/**
+	 * 
+	 * @param pattern
+	 * @return
+	 * @since 0.2
+	 */
+	public Pattern or(java.util.regex.Pattern pattern)
+	{
+		Pattern pattern1 = normalize();
+		Pattern pattern2 = normalize(pattern);
+
+		return or(pattern1.pattern(), pattern1.flags(), pattern2.pattern(), pattern2.flags());
+	}
+
+	private static Pattern or(String regex1, int flags1, CharSequence regex2, int flags2)
+	{
+		if (flags1 != flags2) {
+			throw new IllegalArgumentException("Flags in normalized patterns must be identical to 'or' them.\n" +
+					"Normalized <this>:\n" +
+					"Flags:    " + new PatternFlags(flags1) + "\n" +
+					"Pattern:  " + regex1 + "\n\n" +
+
+					"Normalized <other>:\n" +
+					"Flags:   " + new PatternFlags(flags2) + "\n" +
+					"Pattern: " + regex2);
+		}
+
+		return lazyCompile("(?|(?:" + regex1 + ")|(?:" + regex2 + "))");
+	}
+
+	public Pattern or(PatternFlag flag)
+	{
+		return or(flag.intValue());
+	}
+
+	public Pattern or(Set<PatternFlag> flags)
+	{
+		return or(PatternFlags.intValue(flags));
+	}
+
+	public Pattern or(int flags)
+	{
+		return lazyCompile(pattern(), flags() | flags);
+	}
+
+	/*
+	 * TODO: implement 'and' using positive look-aheads.
+	 * Works, but what would it match - the entire string?? nothing?
+	 * Not sure how to implement to be most effective.
+	 */
+
+	/*
+	 * TODO: implement a negate operation ('negative' operator) - returns a Pattern which matches everything
+	 * that this Pattern does not.
+	 */
+
+	/**
+	 * 
+	 * @param regex
+	 * @return
+	 * @since 0.2
+	 */
+	public Pattern plus(CharSequence regex)
+	{
+		return lazyCompile(pattern() + regex, flags());
+	}
+
+	/**
+	 * @param pattern
+	 * @return
+	 * @since 0.2
+	 */
+	public Pattern plus(Pattern pattern)
+	{
+		Pattern pattern1 = normalize();
+		Pattern pattern2 = pattern.normalize();
+
+		return plus(pattern1.pattern(), pattern1.flags(), pattern2.pattern(), pattern2.flags());
+	}
+
+	/**
+	 * @param pattern
+	 * @return
+	 * @since 0.2
+	 */
+	public Pattern plus(java.util.regex.Pattern pattern)
+	{
+		Pattern pattern1 = normalize();
+		Pattern pattern2 = normalize(pattern);
+
+		return plus(pattern1.pattern(), pattern1.flags(), pattern2.pattern(), pattern2.flags());
+	}
+
+	private static Pattern plus(String regex1, int flags1, CharSequence regex2, int flags2)
+	{
+		if (flags2 != 0 && flags2 != flags1) {
+			throw new IllegalArgumentException(
+					"Flags in normalized patterns must be 0 or the same as the first pattern to 'add' to existing pattern.\n"
+							+ "Pattern 1:\n"
+							+ "Flags:   " + new PatternFlags(flags1) + "\n"
+							+ "Pattern: " + regex1 + "\n\n"
+
+							+ "Normalized Pattern 2:\n"
+							+ "Flags:   " + new PatternFlags(flags2) + "\n"
+							+ "Pattern: " + regex2);
+		}
+
+		return lazyCompile(regex1 + regex2, flags1);
 	}
 
 	/**
 	 * Returns the actual group number (in the internal pattern) for the given
 	 * mapping name.
+	 * 
+	 * @param groupName
+	 *            the group name
+	 * @param occurrence
+	 *            the occurrence
+	 * @return the mapped index
+	 */
+	Integer getMappedIndex(String groupName, int occurrence)
+	{
+		String mappingName = getMappingName(groupName, occurrence);
+		return getMappedIndex(mappingName);
+	}
+
+	/**
+	 * Returns the actual group number (in the internal pattern) for the given
+	 * mapping name.
+	 * 
+	 * @param mappingName
+	 *            the mapping name
+	 * @return the mapped index
 	 */
 	Integer getMappedIndex(String mappingName)
 	{
-		return groupMapping.get(mappingName);
+		return getGroupMapping().get(mappingName);
 	}
 
 	/**
@@ -6469,9 +3818,10 @@ public final class Pattern implements Serializable
 	 *            the group name
 	 * @param occurrence
 	 *            the occurrence
-	 * @return groupName "[" + occurrence + "]"
+	 * @return groupName + "[" + occurrence + "]"
 	 */
-	static String getMappingName(String groupName, int occurrence)
+	static String getMappingName(String groupName,
+			int occurrence)
 	{
 		return groupName + "[" + occurrence + "]";
 	}
@@ -6480,11 +3830,11 @@ public final class Pattern implements Serializable
 	 * Returns the (internally) used string for mapping a group and occurrence
 	 * (in the original pattern) to its group index (in the refactored pattern).
 	 * 
-	 * @param groupName
-	 *            the group name
+	 * @param groupIndex
+	 *            the group index
 	 * @param occurrence
 	 *            the occurrence
-	 * @return groupName "[" + occurrence + "]"
+	 * @return "[" groupIndex + "][" + occurrence + "]"
 	 */
 	static String getMappingName(int groupIndex, int occurrence)
 	{
@@ -6506,217 +3856,18 @@ public final class Pattern implements Serializable
 	}
 
 	/**
-	 * Returns the unwrapped group index.
-	 * 
-	 * <p>If <code>groupIndex</code> is surrounded by square brackets, they are
-	 * removed,
-	 * and the group index is returned. Otherwise, the given group index is
-	 * returned unmodified.</p>
-	 */
-	static String unwrapIndex(String groupIndex)
-	{
-		if (groupIndex.charAt(0) == '['
-				&& groupIndex.charAt(groupIndex.length() - 1) == ']') {
-			return groupIndex.substring(1, groupIndex.length() - 1);
-		}
-
-		return groupIndex;
-	}
-
-	/**
-	 * Returns the group index for the first non-null match (starting with group
-	 * 1) in the specified matcher.
-	 */
-	static int getUsedGroup(java.util.regex.Matcher matcher)
-	{
-		for (int i = 1; i <= matcher.groupCount(); i++) {
-			if ((matcher.start(i)) != -1) {
-				return i;
-			}
-		}
-
-		return 0;
-	}
-
-	/**
 	 * Returns the given group name, adjusting the case based on
 	 * the {@link #CASE_INSENSITIVE_NAMES} flag.
 	 * 
 	 * @param groupName
 	 *            the group name
-	 * @return the group name, adjusting the case based on the
-	 *         {@link #CASE_INSENSITIVE_NAMES} flag
+	 * @return the group name, adjusting the case based on the {@link #CASE_INSENSITIVE_NAMES} flag
 	 */
 	// String handleCase(String groupName)
 	// {
 	// return hasCaseInsensitiveGroupNames()
 	// ? groupName.toLowerCase(Locale.ENGLISH) : groupName;
 	// }
-
-	/**
-	 * TODO: add javadoc comments.
-	 */
-	private static class MatchState implements State
-	{
-
-		/** The mapping name. */
-		String mappingName;
-
-		/** The parenthesis depth. */
-		int parenthesisDepth;
-
-		/** The test condition group i. */
-		Integer testConditionGroupI;
-
-		/**
-		 * @param mappingName
-		 *            the mapping name for the group
-		 * @param parenthesisDepth
-		 *            the parenthesis depth for the group
-		 * @param testConditionGroup
-		 *            the test condition group
-		 */
-		MatchState(String mappingName, int parenthesisDepth,
-				Integer testConditionGroup)
-		{
-			this.mappingName = mappingName;
-			this.parenthesisDepth = parenthesisDepth;
-			this.testConditionGroupI = testConditionGroup;
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		public int getParenthesisDepth()
-		{
-			return this.parenthesisDepth;
-		}
-
-		/**
-		 * Returns a string useful for debugging
-		 * 
-		 * @return a string representation of this state
-		 */
-		@Override
-		public String toString()
-		{
-			return mappingName + " -> (" + testConditionGroupI + "): "
-					+ parenthesisDepth;
-		}
-	}
-
-	/**
-	 * The Class BranchResetState.
-	 */
-	private static class BranchResetState implements State
-	{
-
-		/** The start group. */
-		int startGroup;
-
-		/** Number of unnamed groups */
-		int unnamedGroup;
-
-		/** The parenthesis depth. */
-		int parenthesisDepth;
-
-		/** The end group. */
-		int endGroup = -1;
-
-		/** The end unnamed groups */
-		int endUnnamedGroup = -1;
-
-		/**
-		 * @param startGroup
-		 *            the start group for the "branch reset" subpattern
-		 * @param namedGroups
-		 *            the current number of unnamed groups
-		 * @param parenthesisDepth
-		 *            the parenthesis depth for the subpattern
-		 */
-		BranchResetState(int startGroup, int unnamedGroups, int parenthesisDepth)
-		{
-			this.startGroup = startGroup;
-			this.unnamedGroup = unnamedGroups;
-			this.parenthesisDepth = parenthesisDepth;
-		}
-
-		/**
-		 * {@inheritDoc}
-		 */
-		public int getParenthesisDepth()
-		{
-			return this.parenthesisDepth;
-		}
-
-		/**
-		 * Updates the end group of a "branch reset" subpattern
-		 * 
-		 * <p>The end group is only updated if the specified group is greater
-		 * than the current end group.</p>
-		 * 
-		 * @param group
-		 *            the new end group
-		 */
-		void updateEndGroup(int group, int unnamed)
-		{
-			if (group > endGroup)
-				endGroup = group;
-
-			if (unnamed > endUnnamedGroup)
-				endUnnamedGroup = unnamed;
-		}
-
-		/**
-		 * Returns a string useful for debugging
-		 * 
-		 * @return a string representation of this state
-		 */
-		@Override
-		public String toString()
-		{
-			// TODO Auto-generated method stub
-			return super.toString();
-		}
-	}
-
-	private static class AddTestGroupState implements State
-	{
-		String mappingName;
-		String namedMappingName;
-		int parenthesisDepth;
-
-		/**
-		 * @param mappingName
-		 * @param namedMappingName
-		 * @param parenthesisDepth
-		 */
-		AddTestGroupState(String mappingName, int parenthesisDepth,
-				String namedMappingName)
-		{
-			this.mappingName = mappingName;
-			this.namedMappingName = namedMappingName;
-			this.parenthesisDepth = parenthesisDepth;
-		}
-
-		public int getParenthesisDepth()
-		{
-			return parenthesisDepth;
-		}
-	}
-
-	/**
-	 * The Interface State.
-	 */
-	private static interface State
-	{
-		/**
-		 * Gets the parenthesis depth.
-		 * 
-		 * @return the parenthesis depth
-		 */
-		public int getParenthesisDepth();
-	}
 
 	/**
 	 * Returns a regular expression that matches the specified numeric range.
@@ -6766,18 +3917,23 @@ public final class Pattern implements Serializable
 	 */
 	public static String range(int start, int end, String mode)
 	{
-		java.util.regex.Matcher rangeMode = Range.rangeModeRegEx.matcher(mode);
+		// java.util.regex.Matcher rangeMode = Range.rangeModeRegEx.matcher(mode);
 
-		if (!rangeMode.matches())
-			throw new IllegalArgumentException("Illegal range mode");
+		// if (!rangeMode.matches())
+		// throw new IllegalArgumentException("Illegal range mode");
 
-		int base = rangeMode.group(2) == null ? 10 : Integer
-				.parseInt(rangeMode.group(2));
+		// int base = rangeMode.group(2) == null ? 10 : Integer.parseInt(rangeMode
+		// .group(2));
 
-		return "(?:"
-				+ Range.range(Integer.toString(start, base), Integer.toString(
-				end,
-				base), mode) + ")";
+		RangeMode rangeMode = new RangeMode(mode);
+		int base = rangeMode.base();
+
+		// return "(?:" +
+		// Range.range(Integer.toString(start, base), Integer.toString(
+		// end, base), mode) + ")";
+		return "(?:" +
+				PatternRange.range(Integer.toString(start, base), Integer.toString(
+						end, base), rangeMode) + ")";
 	}
 
 	/**
@@ -6847,632 +4003,6 @@ public final class Pattern implements Serializable
 			throw new IllegalArgumentException(
 					"End value cannot be the empty string");
 
-		return "(?:" + Range.range(start, end, mode) + ")";
-	}
-
-	/**
-	 * Functions used to match a range of values e.g. 1 or 001..999; 001..999;
-	 * 1..999
-	 */
-	private static class Range
-	{
-		/**
-		 * Pattern used to match a range mode.
-		 * 
-		 * <p><b>Format</b>: Mode[Base[BaseMode]]</p>
-		 * 
-		 * <p>Descriptions and valid values:</p>
-		 * <ul>
-		 * <li><b>Mode</b>: either "Z" (allows leading zeros) or "NZ" (no
-		 * leading
-		 * zeros)</li>
-		 * 
-		 * <li><b>Base</b>: the numeric base for start and end (valid bases, 2 -
-		 * 36)</li>
-		 * 
-		 * <li><b>BaseMode</b>: whether to use lower ("L"), upper ("U"), or both
-		 * upper and lower (omitted) case digits when specifying digits A-Z for
-		 * digit values 10-36.
-		 * 
-		 * <p>If the result doesn't include "letter digits" or if the base is
-		 * ten or less,
-		 * <i>BaseMode</i> has no effect, but can be specified (for
-		 * consistency).</p></li>
-		 * </ul>
-		 */
-		// private static final java.util.regex.Pattern rangeModeRegEx =
-		// java.util.regex.Pattern
-		// .compile("^(N?Z)r?(?:(\\d++)([LU])?)?$");
-		static final java.util.regex.Pattern rangeModeRegEx = java.util.regex.Pattern
-				.compile("^(N?Z)(?:(\\d++)([LU])?)?$");
-
-		/**
-		 * 
-		 * @param start
-		 * @param end
-		 * @param mode
-		 * @return
-		 * 
-		 * @throws IllegalArgumentException
-		 *             If the mode is invalid
-		 */
-		static String range(String start, String end, String mode)
-		{
-			java.util.regex.Matcher rangeMode = rangeModeRegEx.matcher(mode);
-
-			if (!rangeMode.matches())
-				throw new IllegalArgumentException("Illegal range mode");
-
-			start = start.toLowerCase(Locale.ENGLISH);
-			end = end.toLowerCase(Locale.ENGLISH);
-
-			boolean allowLeadingZeros = rangeMode.group(1).equals("Z");
-			int base = rangeMode.group(2) == null ? 10 : Integer
-					.parseInt(rangeMode.group(2));
-
-			if (base < Character.MIN_RADIX || base > Character.MAX_RADIX)
-				throw new IllegalArgumentException(INVALID_BASE);
-
-			java.util.regex.Pattern validDigits = java.util.regex.Pattern
-					.compile("^-?" + digitRange(0, base - 1, "UL") + "*+");
-
-			java.util.regex.Matcher validStart = validDigits.matcher(start);
-			validStart.find();
-
-			if (!validStart.hitEnd()) {
-				throw new PatternSyntaxException(INVALID_DIGIT_START, start,
-						validStart.end());
-			}
-
-			validStart.reset(end);
-			validStart.find();
-
-			if (!validStart.hitEnd()) {
-				throw new PatternSyntaxException(INVALID_DIGIT_END, end,
-						validStart.end());
-			}
-
-			// String baseMode = rangeMode.group(3) == null ? "LU" : rangeMode
-			// .group(3).toUpperCase(Locale.ENGLISH);
-			String baseMode = rangeMode.group(3) == null ? "LU" : rangeMode
-					.group(3);
-
-			if (compare(start, end) > 0) {
-				// swap values
-
-				String tmpStr = start;
-				start = end;
-				end = tmpStr;
-			}
-
-			boolean negStart = start.charAt(0) == '-';
-			boolean negEnd = end.charAt(0) == '-';
-
-			String negS = "", negE = "", posS = "", posE = "";
-
-			if (negStart) {
-				if (negEnd) {
-					// both start and end are negative
-					// e.g. -170 to -16 -> 16 to 170 (with a leading negative
-					// sign)
-					negS = end.substring(1);
-					negE = start.substring(1);
-				} else {
-					// start is negative and end is non-negative
-					negS = compare(start, "0") == 0 ? "0" : "1";
-					negE = start.substring(1);
-
-					posS = "0";
-					posE = end;
-				}
-			} else {
-				// both are non-negative
-
-				if (negEnd) {
-					// special case
-					// start = 0 and end = -0
-					negS = "0";
-					negE = "0";
-
-					posS = "0";
-					posE = "0";
-				} else {
-					posS = start;
-					posE = end;
-				}
-			}
-
-			StringBuilder result = new StringBuilder();
-
-			if (negS.length() != 0) {
-				result.append(range_private("-", negS, negE,
-						allowLeadingZeros, base, baseMode));
-			}
-
-			if (posS.length() != 0) {
-				if (result.length() != 0)
-					result.append('|');
-
-				result.append(range_private("", posS, posE, allowLeadingZeros,
-						base, baseMode));
-			}
-
-			return result.toString();
-		}
-
-		/*
-		 * TODO modify javadoc comments
-		 */
-
-		/**
-		 * <p>
-		 * Returns a regular expression that will match a number in the
-		 * specified range.
-		 * </p>
-		 * 
-		 * <p>
-		 * If <code>allowLeadingZeros</code> is <code>true</code>, the number of
-		 * digits in a accepted match is between the number of digits in
-		 * <code>startStr</code> and <code>endStr</code> and leading zeros are
-		 * allowed.
-		 * </p>
-		 * 
-		 * <p>
-		 * If <code>allowLeadingZeros</code> is <code>false</code>, the returned
-		 * regular expression will not allow leading zeros in an accepted match.
-		 * </p>
-		 * 
-		 * <p>
-		 * This internal method has the following constraints:
-		 * </p>
-		 * <ol>
-		 * <li>startStr and endStr must contain a positive number</li>
-		 * <li>startStr &lt;= endStr</li>
-		 * </ol>
-		 * 
-		 * <b>Note</b>: there is no constraint on how large
-		 * <code>startStr</code> and <code>endStr</code> may be. In other words,
-		 * they can be any positive integer.
-		 */
-		private static String range_private(String lead, String startStr,
-				String endStr, boolean allowLeadingZeros, int base,
-				String baseMode)
-		{
-			if (allowLeadingZeros)
-				return rangeZ_private(lead, startStr, endStr, base, baseMode);
-
-			StringBuilder result = new StringBuilder();
-
-			// remove leading zeros
-			String start = removeLeadingZeros(startStr);
-			String end = removeLeadingZeros(endStr);
-
-			if (start.length() == end.length())
-				return rangeZ_private(lead, start, end, base, baseMode);
-
-			for (int i = start.length(); i <= end.length(); i++) {
-				String tmpStart, tmpEnd;
-
-				if (i == start.length()) {
-					tmpStart = start;
-					tmpEnd = repeat(Character.forDigit(base - 1, base), i);
-				} else if (i == end.length()) {
-					tmpStart = "1" + repeat('0', i - 1);
-					tmpEnd = end;
-				} else {
-					tmpStart = "1" + repeat('0', i - 1);
-					tmpEnd = repeat(Character.forDigit(base - 1, base), i);
-				}
-
-				if (result.length() != 0)
-					result.insert(0, '|');
-
-				result.insert(0, rangeZ_private(lead, tmpStart, tmpEnd, base,
-						baseMode));
-			}
-
-			return result.toString();
-		}
-
-		private static String rangeZ_private(String lead, String start,
-				String end, int base, String baseMode)
-		{
-			// TODO: dive into test cases for each branch
-			if (start.length() == 1 && end.length() == 1) {
-				int digit1 = Character.digit(start.charAt(0), base);
-				int digit2 = Character.digit(end.charAt(0), base);
-
-				if (digit1 == digit2)
-					return lead + start;
-				else
-					return lead + digitRange(digit1, digit2, baseMode);
-			} else {
-				boolean optZero;
-				int digit1, digit2;
-				String newStart, newEnd;
-
-				if (start.length() < end.length()) {
-					// optional zero (e.g. 1-17)
-
-					digit1 = 0;
-					digit2 = Character.digit(end.charAt(0), base);
-
-					newStart = start;
-					newEnd = end.substring(1);
-
-					optZero = true;
-				} else if (end.length() < start.length()) {
-					// optional zero (e.g. 01-7)
-
-					digit1 = Character.digit(start.charAt(0), base);
-					digit2 = 0;
-
-					newStart = start.substring(1);
-					newEnd = end;
-
-					optZero = true;
-				} else {
-					digit1 = Character.digit(start.charAt(0), base);
-					digit2 = Character.digit(end.charAt(0), base);
-
-					newStart = start.substring(1);
-					newEnd = end.substring(1);
-
-					optZero = false;
-				}
-
-				if (digit1 == digit2) {
-					String newLead = lead + forDigit(digit1, baseMode)
-							+ (optZero ? "?" : "");
-
-					return rangeZ_private(newLead, newStart, newEnd, base,
-							baseMode);
-				}
-
-				StringBuilder result = new StringBuilder();
-
-				if (!newStart.equals(repeat('0', newStart.length()))) {
-					String newLead = lead + forDigit(digit1, baseMode);
-
-					if (optZero && digit1 == 0)
-						newLead += "?";
-
-					result.insert(0, rangeZ_private(newLead, newStart,
-							repeat(
-							Character.forDigit(base - 1, base), newEnd
-							.length()), base, baseMode));
-
-					digit1++;
-				}
-
-				boolean needSecondGroup;
-
-				if (!newEnd.equals(repeat(Character.forDigit(base - 1, base),
-						newEnd.length()))) {
-					needSecondGroup = true;
-					digit2--;
-				} else
-					needSecondGroup = false;
-
-				if (digit1 <= digit2) {
-					if (result.length() != 0) {
-						result.insert(0, '|');
-					}
-
-					String newLead = lead;
-
-					if (digit1 == digit2)
-						newLead += forDigit(digit1, baseMode);
-					else
-						newLead += digitRange(digit1, digit2, baseMode);
-
-					int useLength;
-
-					if (optZero && digit1 == 0) {
-						newLead += "?";
-						useLength = newStart.length();
-					} else
-						useLength = newEnd.length();
-
-					// result.insert(0, rangeZ_private(newLead, repeat("0",
-					// useLength), repeat(Character.digit(base-1, base),
-					// newEnd.length())));
-
-					/*
-					 * refactored to decrease pattern length (uses "{M, N}"
-					 * patternSyntax)
-					 * 
-					 * result.insert(0, rangeZ_private(newLead, repeat("0",
-					 * useLength), repeat(Character.digit(base-1, base),
-					 * newEnd.length())));
-					 */
-
-					int minNum = Math.min(useLength, newEnd.length());
-					int maxNum = Math.max(useLength, newEnd.length());
-
-					if (digit1 == 0 && digit2 == base - 1) {
-						newLead = "";
-						maxNum++;
-
-						if (!optZero)
-							minNum++;
-					}
-
-					if (minNum == maxNum) {
-						if (minNum == 1) {
-							// range(newLead, "0", "9") -> newLead + "[0-9]"
-							result.insert(0, newLead
-									+ digitRange(0, base - 1, baseMode));
-						} else {
-							// e.g. useLength == 2
-							// range(newLead, "00", "99") -> newLead +
-							// "[0-9]{2}"
-							result.insert(0, newLead
-									+ digitRange(0, base - 1, baseMode) + "{"
-									+ minNum + "}");
-						}
-					} else {
-						result.insert(0, newLead
-								+ digitRange(0, base - 1, baseMode) + "{"
-								+ minNum + ","
-								+ maxNum + "}");
-					}
-				}
-
-				if (needSecondGroup) {
-					if (result.length() != 0) {
-						result.insert(0, '|');
-					}
-
-					String newLead = lead + forDigit(digit2 + 1, baseMode);
-
-					if (optZero && digit2 + 1 == 0)
-						newLead += "?";
-
-					result.insert(0, rangeZ_private(newLead, repeat('0',
-							newEnd.length()), newEnd, base, baseMode));
-				}
-
-				return result.toString();
-			}
-		}
-
-		private static int compare(String value1, String value2)
-		{
-			value1 = simplify(value1);
-			value2 = simplify(value2);
-
-			int sign = sign_fin(value1);
-
-			if (sign != sign_fin(value2)) {
-				return sign;
-			}
-
-			if (value1.length() != value2.length()) {
-				// e.g. 321 < 1234
-				// e.g. -321 > -1234
-
-				return (value1.length() - value2.length()) * sign;
-			} else // value1.length() == value2.length()
-			{
-				// e.g. 123 < 234
-				// e.g. -123 > -234
-
-				return value1.compareTo(value2) * sign;
-			}
-		}
-
-		/**
-		 * Checks if the given number is negative or position.
-		 * 
-		 * @param number
-		 *            the (string) number to check
-		 * 
-		 * @return -1 if the number is negative (has a '-' as the first
-		 *         character); 1 otherwise.
-		 */
-		private static int sign_fin(String number)
-		{
-			return number.charAt(0) == '-' ? -1 : 1;
-		}
-
-		/**
-		 * Simplifies the sign, and removes leading zeros.
-		 * 
-		 * <p>Simplifies leading
-		 * "+" and "-" sign(s) to a single "-" sign if negative, and no sign, if
-		 * positive. Removes any leading zeros in the number.</p>
-		 * 
-		 * @param number
-		 *            the (string) number to simplify
-		 * @return the inputted number, simplifying the sign and removing
-		 *         leading zeros.
-		 */
-		private static String simplify(String number)
-		{
-			int sign = 1, i = 0;
-
-			// simplify leading "+" and "-"
-			while (number.charAt(i) == '-' || number.charAt(i) == '+') {
-				if (number.charAt(i) == '-') {
-					sign *= -1;
-				}
-
-				i++;
-			}
-
-			// remove leading zeros (won't remove last zero, in case number = 0)
-			while (i + 1 < number.length() && number.charAt(i) == '0') {
-				i++;
-			}
-
-			String simplifiedNumber = number.substring(i);
-
-			if (simplifiedNumber.equals("0")) {
-				return "0";
-			}
-
-			return (sign == -1 ? "-" : "") + simplifiedNumber;
-		}
-
-		/**
-		 * Removes leading zeros from the given (string) number.
-		 * 
-		 * <p><b>Implementation note</b>: this method also simplifies the
-		 * leading "+" and "-" signs.</p>
-		 * 
-		 * @param number
-		 *            the number whose leading zeros are removed
-		 * 
-		 * @return the given number with leading zeros removed
-		 */
-		private static String removeLeadingZeros(String number)
-		{
-			return simplify(number);
-		}
-
-		private static String forDigit(int digit, String baseMode)
-		{
-			StringBuilder forDigit = new StringBuilder();
-			boolean containsL = baseMode.contains("L");
-
-			if (containsL)
-				forDigit.append(Character
-						.forDigit(digit, Character.MAX_RADIX));
-
-			if (baseMode.contains("U") && digit >= 10 || !containsL) {
-				forDigit.append((char) (Character.forDigit(digit,
-						Character.MAX_RADIX) - (digit >= 10 ? ' ' : 0)));
-			}
-
-			return forDigit.length() == 1 ? forDigit.toString() : "["
-					+ forDigit + "]";
-		}
-
-		/**
-		 * Return a regular expression that matches the given range of digits.
-		 * 
-		 * @param start
-		 *            the start digit
-		 * @param end
-		 *            the end digit
-		 * @param baseMode
-		 *            the L/U switch
-		 * @return a regular expression that matches the given range of digits
-		 */
-		private static String digitRange(int start, int end, String baseMode)
-		{
-			StringBuilder digitRange = new StringBuilder("[");
-
-			if (start < 9) {
-				char startDigit = Character
-						.forDigit(start, Character.MAX_RADIX);
-				char endDigit = Character.forDigit(Math.min(end, 9),
-						Character.MAX_RADIX);
-
-				if (startDigit == endDigit)
-					digitRange.append(startDigit);
-				else
-					digitRange.append(startDigit).append('-').append(endDigit);
-			}
-
-			if (end >= 10) {
-				char startDigit = Character.forDigit(Math.max(start, 10),
-						Character.MAX_RADIX);
-				char endDigit = Character.forDigit(end, Character.MAX_RADIX);
-
-				if (baseMode.contains("L")) {
-					if (startDigit == endDigit)
-						digitRange.append(startDigit);
-					else
-						digitRange.append(startDigit).append('-').append(
-								endDigit);
-				}
-
-				if (baseMode.contains("U")) {
-					if (startDigit == endDigit)
-						digitRange.append((char) (startDigit - ' '));
-					else
-						digitRange.append((char) (startDigit - ' '))
-								.append('-').append((char) (endDigit - ' '));
-				}
-			}
-
-			return digitRange.append(']').toString();
-		}
-
-		/**
-		 * Returns a String with the specified character repeated
-		 * 
-		 * @param character
-		 *            <code>char</code> to repeat
-		 * @param count
-		 *            number of times to repeat the character
-		 * @return a string with the given character repeated <code>count</code>
-		 *         times
-		 */
-		private static String repeat(char character, int count)
-		{
-			StringBuilder result = new StringBuilder();
-
-			for (int i = 0; i < count; i++) {
-				result.append(character);
-			}
-
-			return result.toString();
-		}
-	}
-
-	/**
-	 * Enumeration of error messages encountered when interacting with patterns.
-	 */
-	static class PatternErrorMessage
-	{
-		static final String CONDITIONAL_BRANCHES = "Conditional group contains more than two branches";
-
-		static final String UNMATCHED_PARENTHESES = "Unmatched closing ')'";
-
-		static final String UNKNOWN_POSIX_CLASS = "Unknown POSIX class name";
-
-		static final String POSIX_OUTSIDE_CLASS = "POSIX class outside of character class";
-
-		static final String INVALID_HEX_CODE = "Character value in \\x{...} sequence is too large";
-
-		static final String UNCLOSED_GROUP = "Unclosed group";
-
-		static final String ILLEGAL_OCTAL_ESCAPE = "Illegal octal escape sequence";
-
-		static final String NUMERIC_RANGE_EXPECTED = "Numeric range expected";
-
-		static final String UNCLOSED_RANGE = "Missing closing ']' after numeric range";
-
-		static final String INVALID_BASE = "Invalid base";
-
-		static final String INVALID_DIGIT_START = "Invalid digit in start of range";
-
-		static final String INVALID_DIGIT_END = "Invalid digit in end of range";
-
-		static final String NONEXISTENT_SUBPATTERN = "Reference to non-existent subpattern";
-
-		static final String ZERO_REFERENCE = "A numbered reference is zero";
-
-		static final String INVALID_CONDITION0 = "Invalid condition (?(0)";
-
-		static final String ASSERTION_EXPECTED = "Assertion expected after (?(";
-
-		static final String SUBPATTERN_NAME_EXPECTED = "Subpattern name expected";
-
-		static final String MISSING_TERMINATOR = "Missing terminator for subpattern name";
-
-		/**
-		 * Uses error message from Java 1.5
-		 */
-		static final String INVALID_FORWARD_REFERENCE = "No such group yet exists at this point in the pattern";
-
-		static final String INTERNAL_ERROR = "An unexpected internal error has occurred";
-
-		static final String DUPLICATE_NAME = "Two named subpatterns have the same name";
-
-		static final String UNCLOSED_COMMENT = "Missing closing ')' after comment";
+		return "(?:" + PatternRange.range(start, end, new RangeMode(mode)) + ")";
 	}
 }
