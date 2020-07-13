@@ -2951,69 +2951,74 @@ public final class Matcher implements MatchResult, Cloneable {
 		// Iterator doesn't modify this Matcher
 		final Matcher matcher = this.clone().reset();
 
-		// Mimics Groovy
-		// final Matcher matcher = reset();
+		return new MatchResultIterator(this);
+	}
 
-		// return new Iterator<List<String>>() {
-		return new Iterator<MatchResult>() {
-			private boolean found /* = false */;
-			private boolean done /* = false */;
+	// suggestion from SpotBugs
+	private static class MatchResultIterator implements Iterator<MatchResult> {
+		private boolean found /* = false */;
+		private boolean done /* = false */;
 
-			@Override
-			public boolean hasNext() {
-				if (this.done) {
-					return false;
-				}
+		private final Matcher matcher;
+
+		public MatchResultIterator(final Matcher matcher) {
+			this.matcher = matcher;
+		}
+
+		@Override
+		public boolean hasNext() {
+			if (this.done) {
+				return false;
+			}
+			if (!this.found) {
+				this.found = this.matcher.find();
 				if (!this.found) {
-					this.found = matcher.find();
-					if (!this.found) {
-						this.done = true;
-					}
+					this.done = true;
 				}
-				return this.found;
 			}
+			return this.found;
+		}
 
-			// public List<String> next()
-			@Override
-			public MatchResult next() {
-				if (!this.found) {
-					if (!this.hasNext()) {
-						throw new NoSuchElementException();
-					}
+		// public List<String> next()
+		@Override
+		public MatchResult next() {
+			if (!this.found) {
+				if (!this.hasNext()) {
+					throw new NoSuchElementException();
 				}
-				this.found = false;
-
-				// List<String> list = new ArrayList<String>(matcher.groupCount() + 1);
-				//
-				// for (int i = 0; i <= matcher.groupCount(); i++) {
-				// list.add(matcher.group(i));
-				// }
-				//
-				// return list;
-				return matcher.toMatchResult();
-				// return matcher;
-
-				// return matcher.toMatchResult();
-				// if (matcher.groupCount() > 0) {
-				// // are we using groups?
-				// // yes, so return the specified group as list
-				// List<String> list = new ArrayList<String>(matcher.groupCount());
-				// for (int i = 0; i <= matcher.groupCount(); i++) {
-				// list.add(matcher.group(i));
-				// }
-				// return list;
-				// } else {
-				// // not using groups, so return the nth
-				// // occurrence of the pattern
-				// return matcher.group();
-				// }
 			}
+			this.found = false;
 
-			@Override
-			public void remove() {
-				throw new UnsupportedOperationException();
-			}
-		};
+			// List<String> list = new ArrayList<String>(matcher.groupCount() + 1);
+			//
+			// for (int i = 0; i <= matcher.groupCount(); i++) {
+			// list.add(matcher.group(i));
+			// }
+			//
+			// return list;
+			return this.matcher.toMatchResult();
+			// return matcher;
+
+			// return matcher.toMatchResult();
+			// if (matcher.groupCount() > 0) {
+			// // are we using groups?
+			// // yes, so return the specified group as list
+			// List<String> list = new ArrayList<String>(matcher.groupCount());
+			// for (int i = 0; i <= matcher.groupCount(); i++) {
+			// list.add(matcher.group(i));
+			// }
+			// return list;
+			// } else {
+			// // not using groups, so return the nth
+			// // occurrence of the pattern
+			// return matcher.group();
+			// }
+		}
+
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
 	}
 
 	/**
