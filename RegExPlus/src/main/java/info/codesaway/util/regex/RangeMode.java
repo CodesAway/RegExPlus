@@ -3,15 +3,14 @@ package info.codesaway.util.regex;
 import static java.lang.Character.MAX_RADIX;
 import static java.lang.Character.MIN_RADIX;
 
-class RangeMode
-{
-	// TODO: add to supported regex
-
+class RangeMode {
+	// TODO: implement functionality that uses these and make non-static
+	// Changed to static because of SpotBugs warning
 	/** Whether the 0 is optional for negative float values (e.g. -.5) */
-	private final boolean optionalZeroNegative = true;
+	private static final boolean optionalZeroNegative = true;
 
 	/** Whether the 0 is optional for positive float values (e.g. -.5) **/
-	private final boolean optionalZeroPositive = false;
+	private static final boolean optionalZeroPositive = false;
 
 	/** The mode. */
 	private final String mode;
@@ -51,140 +50,126 @@ class RangeMode
 
 	/**
 	 * Instantiates a new range mode.
-	 * 
+	 *
 	 * @param mode
 	 *            the mode
 	 * @throws IllegalArgumentException
 	 *             If mode is not a valid, for any reason (exception message contains the specific reason)
 	 */
-	RangeMode(String mode)
-	{
+	RangeMode(final String mode) {
 		this.mode = mode;
 
 		java.util.regex.Matcher rangeMode = rangeModeRegEx.matcher(mode);
 
-		if (!rangeMode.matches())
+		if (!rangeMode.matches()) {
 			throw new IllegalArgumentException("Illegal range mode: " + mode);
+		}
 
-		allowsLeadingZeros = rangeMode.group(1).equals("Z");
-		rangeType = rangeMode.group(2);
-		forcesDecimalMode = rangeType.equals("d");
-		forcesIntegerMode = rangeType.equals("i");
+		this.allowsLeadingZeros = rangeMode.group(1).equals("Z");
+		this.rangeType = rangeMode.group(2);
+		this.forcesDecimalMode = this.rangeType.equals("d");
+		this.forcesIntegerMode = this.rangeType.equals("i");
 
-		base = rangeMode.group(3) == null ? 10 : Integer
-				.parseInt(rangeMode.group(3));
+		this.base = rangeMode.group(3) == null ? 10
+				: Integer
+						.parseInt(rangeMode.group(3));
 
 		// TODO: include base number in error message
 
-		if (base < MIN_RADIX || base > MAX_RADIX)
+		if (this.base < MIN_RADIX || this.base > MAX_RADIX) {
 			throw new IllegalArgumentException(Refactor.INVALID_BASE);
+		}
 
-		baseMode = rangeMode.group(4) == null ? "" : rangeMode.group(4);
+		this.baseMode = rangeMode.group(4) == null ? "" : rangeMode.group(4);
 
-		allowsLowerCase = baseMode.contains("L");
-		allowsUpperCase = baseMode.contains("U");
+		this.allowsLowerCase = this.baseMode.contains("L");
+		this.allowsUpperCase = this.baseMode.contains("U");
 	}
 
-	private RangeMode(boolean allowsLeadingZeros, String rangeType,
-			int base, String baseMode)
-	{
+	private RangeMode(final boolean allowsLeadingZeros, final String rangeType,
+			final int base, final String baseMode) {
 		// TODO: include base number in error message
 
-		if (base < MIN_RADIX || base > MAX_RADIX)
+		if (base < MIN_RADIX || base > MAX_RADIX) {
 			throw new IllegalArgumentException(Refactor.INVALID_BASE);
+		}
 
 		this.allowsLeadingZeros = allowsLeadingZeros;
 		this.rangeType = rangeType;
 		this.base = base;
 		this.baseMode = baseMode;
 
-		mode = (!allowsLeadingZeros ? "N" : "") + "Z" + rangeType + base + baseMode;
+		this.mode = (!allowsLeadingZeros ? "N" : "") + "Z" + rangeType + base + baseMode;
 
-		forcesDecimalMode = rangeType.equals("d");
-		forcesIntegerMode = rangeType.equals("i");
+		this.forcesDecimalMode = rangeType.equals("d");
+		this.forcesIntegerMode = rangeType.equals("i");
 
-		allowsLowerCase = baseMode.length() == 0 || baseMode.contains("L");
-		allowsUpperCase = baseMode.length() == 0 || baseMode.contains("U");
+		this.allowsLowerCase = baseMode.length() == 0 || baseMode.contains("L");
+		this.allowsUpperCase = baseMode.length() == 0 || baseMode.contains("U");
 	}
 
-	public boolean optionalZeroNegative()
-	{
-		return optionalZeroNegative;
+	public boolean optionalZeroNegative() {
+		return RangeMode.optionalZeroNegative;
 	}
 
-	public boolean optionalZeroPositive()
-	{
-		return optionalZeroPositive;
+	public boolean optionalZeroPositive() {
+		return RangeMode.optionalZeroPositive;
 	}
 
 	@Override
-	public String toString()
-	{
-		return mode;
+	public String toString() {
+		return this.mode;
 	}
 
-	public String mode()
-	{
-		return mode;
+	public String mode() {
+		return this.mode;
 	}
 
-	public boolean allowsLeadingZeros()
-	{
-		return allowsLeadingZeros;
+	public boolean allowsLeadingZeros() {
+		return this.allowsLeadingZeros;
 	}
 
-	public RangeMode allowsLeadingZeros(boolean allowsLeadingZeros)
-	{
-		return new RangeMode(allowsLeadingZeros, rangeType, base, baseMode);
+	public RangeMode allowsLeadingZeros(final boolean allowsLeadingZeros) {
+		return new RangeMode(allowsLeadingZeros, this.rangeType, this.base, this.baseMode);
 	}
 
-	public boolean forcesDecimalMode()
-	{
-		return forcesDecimalMode;
+	public boolean forcesDecimalMode() {
+		return this.forcesDecimalMode;
 	}
 
-	public boolean forcesIntegerMode()
-	{
-		return forcesIntegerMode;
+	public boolean forcesIntegerMode() {
+		return this.forcesIntegerMode;
 	}
 
-	public int base()
-	{
-		return base;
+	public int base() {
+		return this.base;
 	}
 
-	public String baseMode()
-	{
-		return baseMode;
+	public String baseMode() {
+		return this.baseMode;
 	}
 
-	public boolean allowsLowerCase()
-	{
-		return allowsLowerCase;
+	public boolean allowsLowerCase() {
+		return this.allowsLowerCase;
 	}
 
-	public boolean allowsUpperCase()
-	{
-		return allowsUpperCase;
+	public boolean allowsUpperCase() {
+		return this.allowsUpperCase;
 	}
 
-	public String digitRange0()
-	{
-		return PatternRange.digitRange(0, base - 1, baseMode);
+	public String digitRange0() {
+		return PatternRange.digitRange(0, this.base - 1, this.baseMode);
 	}
 
-	public String digitRange1()
-	{
-		return PatternRange.digitRange(1, base - 1, baseMode);
+	public String digitRange1() {
+		return PatternRange.digitRange(1, this.base - 1, this.baseMode);
 	}
 
-	public int lastDigit()
-	{
-		return base - 1;
+	public int lastDigit() {
+		return this.base - 1;
 	}
 
-	public char lastCharacterDigit()
-	{
-		return Character.forDigit(base - 1, base);
+	public char lastCharacterDigit() {
+		return Character.forDigit(this.base - 1, this.base);
 	}
 }

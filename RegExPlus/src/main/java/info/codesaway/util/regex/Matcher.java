@@ -24,7 +24,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 /**
  * An engine that performs match operations on a {@link java.lang.CharSequence
@@ -171,7 +174,7 @@ public final class Matcher implements MatchResult, Cloneable {
 
 			// Return CharSequence text field
 			return (CharSequence) field.get(matcher);
-		} catch (Exception e) {
+		} catch (RuntimeException | NoSuchFieldException | IllegalAccessException e) {
 			throw new AssertionError(e);
 		}
 	}
@@ -2586,7 +2589,7 @@ public final class Matcher implements MatchResult, Cloneable {
 				}
 
 				groupName = wrapIndex(groupNumber);
-			} catch (Exception e) {
+			} catch (RuntimeException e) {
 				if (occurrence0.length() == 0) {
 					throw noNamedGroup(groupName);
 				} else {
@@ -2670,6 +2673,7 @@ public final class Matcher implements MatchResult, Cloneable {
 	 * @since 0.2
 	 */
 	@Override
+	@SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
 	public boolean containsKey(final Object key) {
 		if (key instanceof CharSequence) {
 			try {
@@ -2682,8 +2686,7 @@ public final class Matcher implements MatchResult, Cloneable {
 			Number index = (Number) key;
 
 			try {
-				getAbsoluteGroupIndex(index.intValue(),
-						this.groupCount());
+				getAbsoluteGroupIndex(index.intValue(), this.groupCount());
 				return true;
 			} catch (IndexOutOfBoundsException e) {
 				return false;
@@ -2700,10 +2703,7 @@ public final class Matcher implements MatchResult, Cloneable {
 	public boolean containsValue(final Object value) {
 		for (int i = 1; i <= this.groupCount(); i++) {
 			String group = this.group(i);
-			boolean isEqual = group == value || group != null &&
-					group.equals(value);
-
-			if (isEqual) {
+			if (Objects.equals(group, value)) {
 				return true;
 			}
 		}

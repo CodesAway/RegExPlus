@@ -15,6 +15,8 @@ import static info.codesaway.util.regex.RegExPlusSupport.setLastMatcher;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -24,6 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.function.Predicate;
+
+import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
 // TODO: finish documenting
 // mention that all compiled patterns are now cached
@@ -1679,6 +1684,7 @@ public final class Pattern implements Serializable {
 	 * <p><b>Note</b>: changing this setting will not affect <code>Pattern</code>s that are already created. To
 	 * force a Pattern to compile, call the {@link #forceCompile()} method.</p>
 	 */
+	@SuppressFBWarnings("MS_SHOULD_BE_FINAL")
 	public static boolean lazyCompiling = false;
 
 	/**
@@ -2161,6 +2167,7 @@ public final class Pattern implements Serializable {
 	 *
 	 * @since 0.2
 	 */
+	@SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
 	public boolean hasGroup(final String groupName, final int occurrence) {
 		int groupCount = this.groupCount(groupName);
 
@@ -3164,7 +3171,12 @@ public final class Pattern implements Serializable {
 			// Get map of group names -> group index
 			Field field;
 			field = pattern.getClass().getDeclaredField("namedGroups");
-			field.setAccessible(true);
+			// https://stackoverflow.com/a/43013209
+			// (fix for SpotBugs warning)
+			AccessController.doPrivileged((PrivilegedAction<String>) () -> {
+				field.setAccessible(true);
+				return null;
+			});
 			@SuppressWarnings("unchecked")
 			Map<String, Integer> javaGroupMapping = (Map<String, Integer>) field.get(pattern);
 
@@ -3183,7 +3195,7 @@ public final class Pattern implements Serializable {
 					this.groupCounts.put(groupName, 1);
 				}
 			}
-		} catch (Exception e) {
+		} catch (RuntimeException | NoSuchFieldException | IllegalAccessException e) {
 			// Do nothing
 		}
 
@@ -3918,5 +3930,30 @@ public final class Pattern implements Serializable {
 	public static ThreadLocal<Matcher> getThreadLocalMatcher(final String regex) {
 		Pattern pattern = Pattern.compile(regex);
 		return ThreadLocal.withInitial(pattern::matcher);
+	}
+
+	/**
+	 * Creates a predicate which can be used to match a string.
+	 *
+	 * @return  The predicate which can be used for matching on a string
+	 * @since   1.1
+	 */
+	// Added in Java 1.8 Pattern class
+	public Predicate<String> asPredicate() {
+		return s -> this.matcher(s).find();
+	}
+
+	/**
+	 * Creates a predicate which can be used to match a string.
+	 *
+	 * <p><b>Implementation note</b>: this method uses {@link #getThreadLocalMatcher(String)} to reuse the Matcher</p>
+	 * @param regex The regular expression
+	 * @return  The predicate which can be used for matching on a string
+	 * @since   1.1
+	 */
+	public static Predicate<String> asPredicate(final String regex) {
+		ThreadLocal<Matcher> matcher = getThreadLocalMatcher(regex);
+
+		return s -> matcher.get().reset(s).find();
 	}
 }

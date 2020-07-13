@@ -14,30 +14,29 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * 
+ *
  * Functions used to match a range of values e.g. 1 or 001..999; 001..999;
  * 1..999
  */
-public class PatternRange
-{
+public class PatternRange {
 	/**
 	 * Pattern used to match a range mode.
-	 * 
+	 *
 	 * <p><b>Format</b>: Mode[Base[BaseMode]]</p>
-	 * 
+	 *
 	 * <p>Descriptions and valid values:</p>
 	 * <ul>
 	 * <li><b>Mode</b>: either "Z" (allows leading zeros) or "NZ" (no
 	 * leading
 	 * zeros)</li>
-	 * 
+	 *
 	 * <li><b>Base</b>: the numeric base for start and end (valid bases, 2 -
 	 * 36)</li>
-	 * 
+	 *
 	 * <li><b>BaseMode</b>: whether to use lower ("L"), upper ("U"), or both
 	 * upper and lower (omitted) case digits when specifying digits A-Z for
 	 * digit values 10-36.
-	 * 
+	 *
 	 * <p>If the result doesn't include "letter digits" or if the base is
 	 * ten or less,
 	 * <i>BaseMode</i> has no effect, but can be specified (for
@@ -53,18 +52,17 @@ public class PatternRange
 	// .compile("^(N?Z)(?:(\\d++)([LU])?)?$");
 
 	/**
-	 * 
+	 *
 	 * @param start
 	 * @param end
 	 * @param mode
 	 * @return
-	 * 
+	 *
 	 * @throws IllegalArgumentException
 	 *             If the mode is invalid
 	 */
 	// static String range(String start, String end, String mode)
-	static String range(String start, String end, RangeMode rangeMode)
-	{
+	static String range(String start, String end, final RangeMode rangeMode) {
 		int base = rangeMode.base();
 		// java.util.regex.Matcher rangeMode = rangeModeRegEx.matcher(mode);
 
@@ -163,8 +161,9 @@ public class PatternRange
 		}
 
 		if (posS.length() != 0) {
-			if (result.length() != 0)
+			if (result.length() != 0) {
 				result.append('|');
+			}
 
 			// result.append(range_private("", posS, posE, allowLeadingZeros,
 			// base, baseMode));
@@ -183,19 +182,19 @@ public class PatternRange
 	 * Returns a regular expression that will match a number in the
 	 * specified range.
 	 * </p>
-	 * 
+	 *
 	 * <p>
 	 * If <code>allowLeadingZeros</code> is <code>true</code>, the number of
 	 * digits in a accepted match is between the number of digits in
 	 * <code>startStr</code> and <code>endStr</code> and leading zeros are
 	 * allowed.
 	 * </p>
-	 * 
+	 *
 	 * <p>
 	 * If <code>allowLeadingZeros</code> is <code>false</code>, the returned
 	 * regular expression will not allow leading zeros in an accepted match.
 	 * </p>
-	 * 
+	 *
 	 * <p>
 	 * This internal method has the following constraints:
 	 * </p>
@@ -203,7 +202,7 @@ public class PatternRange
 	 * <li>startStr and endStr must contain a positive number</li>
 	 * <li>startStr &lt;= endStr</li>
 	 * </ol>
-	 * 
+	 *
 	 * <b>Note</b>: there is no constraint on how large
 	 * <code>startStr</code> and <code>endStr</code> may be -
 	 * they can be any positive integer.
@@ -211,16 +210,16 @@ public class PatternRange
 	// private static String range_private(String lead, String startStr,
 	// String endStr, boolean allowLeadingZeros, int base,
 	// String baseMode)
-	private static String range_private(String lead, String startStr,
-			String endStr, RangeMode rangeMode)
-	{
+	private static String range_private(final String lead, final String startStr,
+			final String endStr, final RangeMode rangeMode) {
 		assert !startStr.startsWith("-") : startStr;
 		assert !endStr.startsWith("-") : endStr;
 		assert compare(startStr, endStr) <= 0;
 
-		if (rangeMode.allowsLeadingZeros())
+		if (rangeMode.allowsLeadingZeros()) {
 			// return rangeZ_private(lead, startStr, endStr, base, baseMode);
 			return rangeZ_private(lead, startStr, endStr, rangeMode);
+		}
 
 		StringBuilder result = new StringBuilder();
 
@@ -228,9 +227,10 @@ public class PatternRange
 		String start = removeLeadingZeros(startStr);
 		String end = removeLeadingZeros(endStr);
 
-		if (start.length() == end.length())
+		if (start.length() == end.length()) {
 			// return rangeZ_private(lead, start, end, base, baseMode);
 			return rangeZ_private(lead, start, end, rangeMode);
+		}
 
 		// int base = rangeMode.base();
 
@@ -250,8 +250,9 @@ public class PatternRange
 				tmpEnd = repeat(rangeMode.lastCharacterDigit(), i);
 			}
 
-			if (result.length() != 0)
+			if (result.length() != 0) {
 				result.insert(0, '|');
+			}
 
 			// result.insert(0, rangeZ_private(lead, tmpStart, tmpEnd, base,
 			// baseMode));
@@ -268,21 +269,20 @@ public class PatternRange
 
 	/**
 	 * Makes trailing zeros optional.
-	 * 
+	 *
 	 * <p><code>rangeRegEx</code> uses the following grammar:</p>
-	 * 
+	 *
 	 * <p>branch = parts ('|' parts)*</p>
 	 * <p>parts = part+</p>
 	 * <p>part = number | '[' (range | number)+ ']'</p>
 	 * <p>range = number '-' number</p>
 	 * <p>number = [0-9a-zA-Z]</p>
-	 * 
+	 *
 	 * @param rangeRegEx
 	 *            the range regular expression
 	 * @return the given range regular expression, with trailing zeros optional
 	 */
-	private static String optionalTrailingZeros(String rangeRegEx, String appendToBranchEnd)
-	{
+	private static String optionalTrailingZeros(String rangeRegEx, final String appendToBranchEnd) {
 		// TODO: optimize created Regex
 		// add code to refactor a little and clean up ??
 		boolean isInNonCaptureGroup = rangeRegEx.startsWith("(?:") && rangeRegEx.endsWith(")");
@@ -292,8 +292,8 @@ public class PatternRange
 		}
 
 		StringBuilder result = new StringBuilder();
-		List<String> parts = new ArrayList<String>();
-		List<String> trailingZeros = new ArrayList<String>();
+		List<String> parts = new ArrayList<>();
+		List<String> trailingZeros = new ArrayList<>();
 		boolean onTrailingZeros = true;
 		// boolean hasLastRepetition = false;
 
@@ -313,8 +313,9 @@ public class PatternRange
 				repetition = String.valueOf(c);
 				i--;
 				c = rangeRegEx.charAt(i);
-			} else
+			} else {
 				repetition = "";
+			}
 
 			// Digits
 			// if (c == '[') {
@@ -390,8 +391,9 @@ public class PatternRange
 					resultPart.append("(?:").append(part);
 				}
 
-				if (appendToBranchEnd.length() != 0)
+				if (appendToBranchEnd.length() != 0) {
 					resultPart.append(appendToBranchEnd);
+				}
 
 				// if (maxIndex > 0)
 				// resultPart.append(repeat(")?", maxIndex));
@@ -420,17 +422,17 @@ public class PatternRange
 
 		// return rangeRegEx;
 
-		if (isInNonCaptureGroup)
+		if (isInNonCaptureGroup) {
 			return noncapture(result).toString();
-		else
+		} else {
 			return result.toString();
+		}
 	}
 
 	// private static String rangeZ_private(String lead, String start,
 	// String end, int base, String baseMode)
-	private static String rangeZ_private(String lead, String start,
-			String end, RangeMode rangeMode)
-	{
+	private static String rangeZ_private(final String lead, final String start,
+			final String end, final RangeMode rangeMode) {
 		// TODO: optimize branches - expanding them isn't necessary in Java
 		// TODO: dive into test cases for each branch
 		String baseMode = rangeMode.baseMode();
@@ -439,10 +441,11 @@ public class PatternRange
 			int digit1 = digit(start.charAt(0));
 			int digit2 = digit(end.charAt(0));
 
-			if (digit1 == digit2)
+			if (digit1 == digit2) {
 				return lead + start;
-			else
+			} else {
 				return lead + digitRange(digit1, digit2, baseMode);
+			}
 		} else {
 			boolean optZero;
 			int digit1, digit2;
@@ -492,8 +495,9 @@ public class PatternRange
 			if (!newStart.equals(repeat('0', newStart.length()))) {
 				String newLead = lead + forDigit(digit1, baseMode);
 
-				if (optZero && digit1 == 0)
+				if (optZero && digit1 == 0) {
 					newLead += "?";
+				}
 
 				// result.insert(0, rangeZ_private(newLead, newStart,
 				// repeat(Character.forDigit(base - 1, base), newEnd
@@ -505,7 +509,8 @@ public class PatternRange
 
 				result.insert(0, rangeZ_private(newLead, newStart,
 						repeat(rangeMode.lastCharacterDigit(), newEnd
-								.length()), rangeMode));
+								.length()),
+						rangeMode));
 				digit1++;
 			}
 
@@ -517,8 +522,9 @@ public class PatternRange
 			if (!newEnd.equals(repeat(rangeMode.lastCharacterDigit(), newEnd.length()))) {
 				needSecondGroup = true;
 				digit2--;
-			} else
+			} else {
 				needSecondGroup = false;
+			}
 
 			if (digit1 <= digit2) {
 				if (result.length() != 0) {
@@ -527,16 +533,18 @@ public class PatternRange
 
 				StringBuilder newLead = new StringBuilder();
 
-				newLead.append(lead).append(
-						digitRange(digit1, digit2, baseMode));
+				newLead.append(lead)
+						.append(
+								digitRange(digit1, digit2, baseMode));
 
 				int useLength;
 
 				if (optZero && digit1 == 0) {
 					newLead.append('?');
 					useLength = newStart.length();
-				} else
+				} else {
 					useLength = newEnd.length();
+				}
 
 				// Previously commented out
 				// result.insert(0, rangeZ_private(newLead, repeat("0",
@@ -546,7 +554,7 @@ public class PatternRange
 				/*
 				 * refactored to decrease pattern length (uses "{M, N}"
 				 * patternSyntax)
-				 * 
+				 *
 				 * result.insert(0, rangeZ_private(newLead, repeat("0",
 				 * useLength), repeat(Character.digit(base-1, base),
 				 * newEnd.length())));
@@ -562,8 +570,9 @@ public class PatternRange
 					newLead.append(lead);
 					maxNum++;
 
-					if (!optZero)
+					if (!optZero) {
 						minNum++;
+					}
 				}
 
 				if (minNum == maxNum) {
@@ -600,8 +609,9 @@ public class PatternRange
 
 				String newLead = lead + forDigit(digit2 + 1, baseMode);
 
-				if (optZero && digit2 + 1 == 0)
+				if (optZero && digit2 + 1 == 0) {
 					newLead += "?";
+				}
 
 				// result.insert(0, rangeZ_private(newLead, repeat('0', newEnd
 				// .length()), newEnd, base, baseMode));
@@ -625,7 +635,7 @@ public class PatternRange
 
 	/**
 	 * Extracts the integer and fractional part from a number.
-	 * 
+	 *
 	 * @param number
 	 *            the number
 	 * @return a String[] containing two elements, the integer and
@@ -633,15 +643,15 @@ public class PatternRange
 	 * @throws IllegalArgumentException
 	 *             If <code>number</code> is not a valid number.
 	 */
-	private static String[] extractParts(String number)
-	{
+	private static String[] extractParts(final String number) {
 		// number = simplify(number);
 
 		// System.out.println(number);
 		Matcher matcher = floatValue.matcher(number);
 
-		if (!matcher.matches())
+		if (!matcher.matches()) {
 			throw new IllegalArgumentException("Invalid number: " + number);
+		}
 
 		// boolean isPositive = !matcher.matched("isNegative");
 		String iPart = matcher.group("iPart");
@@ -650,9 +660,8 @@ public class PatternRange
 		return new String[] { iPart, fPart };
 	}
 
-	static String boundedRange(String start, boolean inclusiveStart, String end, boolean inclusiveEnd,
-			RangeMode rangeMode)
-	{
+	static String boundedRange(final String start, boolean inclusiveStart, final String end, boolean inclusiveEnd,
+			final RangeMode rangeMode) {
 		// TODO: add support for int values (e.g. 1.0..10.0)
 
 		// System.out.println(start + "\t" + end);
@@ -723,18 +732,20 @@ public class PatternRange
 		boolean startWithNextInt = isNegativeStart || !inclusiveStart || compare(fPartStart, "0") != 0;
 
 		// TODO: test corner cases near 0, including case of -0
-		if (startWithNextInt)
+		if (startWithNextInt) {
 			ceilStart = isNegativeZeroStart ? "0" : addOne(iPartStart);
-		else
+		} else {
 			ceilStart = iPartStart;
+		}
 
 		// if (compare(ceilStart, iPartEnd) != 0) {
 		if (compare(ceilStart, iPartEnd) < 0) {
 			// TODO: test corner cases near 0
 			String iPartEndMinusOne = subtractOne(iPartEnd);
 
-			if (result.length() != 0)
+			if (result.length() != 0) {
 				result.append('|');
+			}
 
 			// Surround in non-capture group
 			result.append("(?:");
@@ -755,8 +766,9 @@ public class PatternRange
 			// Crosses zero
 			// Need to match -1 < x < 0
 
-			if (result.length() != 0)
+			if (result.length() != 0) {
 				result.append('|');
+			}
 
 			// result.append(matchesNegativeZeroFloats(true, base, baseMode));
 			result.append(matchesNegativeZeroFloats(rangeMode));
@@ -770,8 +782,9 @@ public class PatternRange
 			// System.out.println("upper bound: " + iPartStart);
 
 			if (range.length() != 0) {
-				if (result.length() != 0)
+				if (result.length() != 0) {
 					result.append('|');
+				}
 
 				result.append(range);
 			}
@@ -783,8 +796,7 @@ public class PatternRange
 		// return fPartRange(Comparison.valueOf(MATCHES_ABOVE, inclusiveStart), iPartStart, fPartStart);
 	}
 
-	static String unboundedRange(Comparison comparison, String value, RangeMode rangeMode)
-	{
+	static String unboundedRange(final Comparison comparison, final String value, final RangeMode rangeMode) {
 		// TODO: handle cases near 0 (e.g. >=-0.5)
 
 		// TODO: optimize use of regexes
@@ -831,13 +843,15 @@ public class PatternRange
 		if (!isNegative && comparison == GREATER_THAN_EQUAL && compare(fPart, "0") == 0 && isPowerOfTen(iPart)) {
 			skipDecimal = true;
 			fPartRange = "";
-		} else
+		} else {
 			fPartRange = fPartRange(comparison, iPart, fPart, rangeMode);
+		}
 
 		// Done first, since alternations should be longest number first
 		// (ensures largest match - e.g. 181 instead of 18; -181 instead of -18)
-		if (!isNegative && comparison.matchesBelow() || isNegative && comparison.matchesAbove())
+		if (!isNegative && comparison.matchesBelow() || isNegative && comparison.matchesAbove()) {
 			result.append(fPartRange);
+		}
 
 		// TODO: add optimization in case iPart is power of 10 and fPart is
 		// 0
@@ -866,47 +880,56 @@ public class PatternRange
 			if (compare(start, iPart) != 0) {
 				// Range [0..iPart) / Range (iPart..-1]
 				// (allowing for optional decimal)
-				if (result.length() != 0)
+				if (result.length() != 0) {
 					result.append('|');
+				}
 
 				// result.append(Pattern.range(start, end, "NZ")).append(
 				// "(?:\\.").append(digitRange(0, base - 1, baseMode))
 				// .append("*)?");
 				result.append(Pattern.range(start, end, rangeMode.allowsLeadingZeros(false).mode()))
-						.append("(?:\\.").append(rangeMode.digitRange0())
+						.append("(?:\\.")
+						.append(rangeMode.digitRange0())
 						.append("*)?");
 			}
 
 			if (!matchingNegativeZero) {
-				if (result.length() != 0)
+				if (result.length() != 0) {
 					result.append('|');
+				}
 
 				// Matches -1 < x < 0
 				// result.append(matchesNegativeZeroFloats(true, base, baseMode));
 				result.append(matchesNegativeZeroFloats(rangeMode));
 			}
 
-			if (comparison.matchesBelow())
+			if (comparison.matchesBelow()) {
 				end = "-1";
-			else
+			} else {
 				end = "0";
+			}
 		}
 
-		if (result.length() != 0)
+		if (result.length() != 0) {
 			result.append('|');
+		}
 
 		// Matches x <= end / x >= end
 		// result.append(iPartRange(compareAllowingEqual, end, rangeMode)).append(
 		// "(?:\\.[0-9]*)?");
-		result.append(iPartRange(compareAllowingEqual, end, rangeMode)).append(
-				"(?:\\.").append(rangeMode.digitRange0()).append("*)?");
+		result.append(iPartRange(compareAllowingEqual, end, rangeMode))
+				.append(
+						"(?:\\.")
+				.append(rangeMode.digitRange0())
+				.append("*)?");
 
 		// Done last, since alternations should be shortest number last
 		// (ensures largest match - e.g. 181 instead of 18; -181 instead of -18)
 		if (fPartRange.length() != 0) {
 			if (!isNegative && comparison.matchesAbove() || isNegative && comparison.matchesBelow()) {
-				if (result.length() != 0)
+				if (result.length() != 0) {
 					result.append('|');
+				}
 
 				result.append(fPartRange);
 			}
@@ -918,7 +941,7 @@ public class PatternRange
 	/**
 	 * Returns a regular expression that matches any positive number
 	 * (excludes zero).
-	 * 
+	 *
 	 * @param allowLeadingZeros
 	 *            whether to allow leading zeros
 	 * @param base
@@ -930,14 +953,14 @@ public class PatternRange
 	 */
 	// private static String matchPositive(boolean allowLeadingZeros,
 	// int base, String baseMode)
-	private static String matchPositive(boolean allowsLeadingZeros, RangeMode rangeMode)
-	{
+	private static String matchPositive(final boolean allowsLeadingZeros, final RangeMode rangeMode) {
 		// int base = rangeMode.base();
 
 		StringBuilder result = new StringBuilder();
 
-		if (rangeMode.allowsLeadingZeros())
+		if (rangeMode.allowsLeadingZeros()) {
 			result.append("0*+");
+		}
 
 		// result.append(digitRange(1, base - 1, baseMode));
 		result.append(rangeMode.digitRange1());
@@ -948,22 +971,22 @@ public class PatternRange
 		return result.toString();
 	}
 
-	private static String iPartRange(String iPartStart, boolean inclusiveStart,
-			String iPartEnd, boolean inclusiveEnd, RangeMode rangeMode)
-	{
+	private static String iPartRange(String iPartStart, final boolean inclusiveStart,
+			String iPartEnd, final boolean inclusiveEnd, final RangeMode rangeMode) {
 		// TODO: check corner cases (e.g. iPartStart==iPartEnd)
 
-		if (!inclusiveStart)
+		if (!inclusiveStart) {
 			iPartStart = addOne(iPartStart);
+		}
 
-		if (!inclusiveEnd)
+		if (!inclusiveEnd) {
 			iPartEnd = subtractOne(iPartEnd);
+		}
 
 		return range(iPartStart, iPartEnd, rangeMode);
 	}
 
-	private static String iPartRange(Comparison comparison, String iPart, RangeMode rangeMode)
-	{
+	private static String iPartRange(Comparison comparison, String iPart, final RangeMode rangeMode) {
 		// >= 0
 		// if (compare(iPart, "0") == 0 && comparison == GREATER_THAN_EQUAL)
 		// return "[1-9]?[0-9]+";
@@ -994,11 +1017,13 @@ public class PatternRange
 		boolean isNegative = iPart.startsWith("-");
 		boolean crossesZeroBound = false;
 
-		if (isNegative && comparison.matchesAbove())
+		if (isNegative && comparison.matchesAbove()) {
 			crossesZeroBound = true;
+		}
 
-		if (!isNegative && comparison.matchesBelow())
+		if (!isNegative && comparison.matchesBelow()) {
 			crossesZeroBound = true;
+		}
 
 		if (isNegative) {
 			// if (!crossesZeroBound) {
@@ -1027,8 +1052,9 @@ public class PatternRange
 
 		// Larger values first
 		// (ensures largest number is matched, and not just a part
-		if (!isNegative && crossesZeroBound || isNegative && !crossesZeroBound)
+		if (!isNegative && crossesZeroBound || isNegative && !crossesZeroBound) {
 			result.append('-');
+		}
 
 		// result.append(abovePowerTenInteger(powerOfTen, base, baseMode));
 		result.append(abovePowerTenInteger(powerOfTen, rangeMode));
@@ -1073,8 +1099,9 @@ public class PatternRange
 
 			// System.out.println("10^" + powerOfTen);
 
-			if (crossesZeroBound || isZero)
+			if (crossesZeroBound || isZero) {
 				result.append("|0");
+			}
 
 			// noncapture(result);
 		}
@@ -1088,9 +1115,8 @@ public class PatternRange
 		return resultStr.contains("|") ? "(?:" + result + ")" : resultStr;
 	}
 
-	private static String fPartRange(String iPart, String fPartStart, boolean inclusiveStart,
-			String fPartEnd, boolean inclusiveEnd, RangeMode rangeMode)
-	{
+	private static String fPartRange(final String iPart, String fPartStart, boolean inclusiveStart,
+			String fPartEnd, boolean inclusiveEnd, final RangeMode rangeMode) {
 		// TODO: check cases of when fPartStart == fPartEnd
 		// Check cases of when fPartStart == fPartEnd == 0
 		// Check cases of when fPartStart == 0
@@ -1136,9 +1162,9 @@ public class PatternRange
 				fPartStartUsed = fPartEndUsed;
 				fPartEndUsed = fPartUsedTemp;
 
-				String fPartTemp = fPartStart;
+				//				String fPartTemp = fPartStart;
 				fPartStart = fPartEnd;
-				fPartEnd = fPartTemp;
+				//				fPartEnd = fPartTemp;
 
 				boolean inclusiveTemp = inclusiveStart;
 				inclusiveStart = inclusiveEnd;
@@ -1179,13 +1205,15 @@ public class PatternRange
 		// result.append("\\.(?:");
 
 		// TODO: are these correct steps for negative numbers, as well ??
-		if (!inclusiveStart)
+		if (!inclusiveStart) {
 			fPartStartUsed = withLeadingZeros(addOne(fPartStartUsed), maxLength);
+		}
 
 		// TODO: ensure correct order for negative numbers
 		if (inclusiveEnd) {
-			if (result.length() != 0)
+			if (result.length() != 0) {
 				result.append('|');
+			}
 
 			// TODO: are these correct steps for negative numbers, as well ??
 			result.append(optionalTrailingZeros(fPartEndUsed, "0*"));
@@ -1200,8 +1228,9 @@ public class PatternRange
 			String fPartEndUsedMinusOne = withLeadingZeros(subtractOne(fPartEndUsed), maxLength);
 
 			// System.out.println(fPartStartUsed + "\t" + fPartEndUsedMinusOne);
-			if (result.length() != 0)
+			if (result.length() != 0) {
 				result.append('|');
+			}
 
 			// iPart === "-0" && fPartStartUsed == 0
 			// boolean negativeZeroMatch = compare(iPart, "-0", false) == 0 && compare(fPartStartUsed, "0") == 0;
@@ -1230,14 +1259,16 @@ public class PatternRange
 		}
 
 		if (!inclusiveStart) {
-			if (result.length() != 0)
+			if (result.length() != 0) {
 				result.append('|');
+			}
 
 			result.append(withTrailingZeros(fPartStart, maxLength)).append(matchPositive(true, rangeMode));
 		}
 
-		if (result.length() == 0)
+		if (result.length() == 0) {
 			return "";
+		}
 
 		result.insert(0, "\\.(?:");
 		result.append(")");
@@ -1260,21 +1291,22 @@ public class PatternRange
 		return result.toString();
 	}
 
-	private static String fPartRange(Comparison comparison, String iPart, String fPart, RangeMode rangeMode)
-	{
+	private static String fPartRange(Comparison comparison, final String iPart, final String fPart,
+			final RangeMode rangeMode) {
 		boolean isNegative = iPart.startsWith("-");
 
-		if (isNegative)
+		if (isNegative) {
 			comparison = comparison.negate();
+		}
 
-		if (comparison.matchesAbove())
+		if (comparison.matchesAbove()) {
 			return fPartRange(iPart, fPart, comparison.allowsEqual(), null, false, rangeMode);
-		else
+		} else {
 			return fPartRange(iPart, null, true, fPart, comparison.allowsEqual(), rangeMode);
+		}
 	}
 
-	private static String ceil(String iPart, String fPart)
-	{
+	private static String ceil(final String iPart, final String fPart) {
 		if (fPart == null || fPart.length() == 0 || compare(fPart, "0") == 0) {
 			// An integer - return the integer
 			return iPart;
@@ -1291,8 +1323,7 @@ public class PatternRange
 		}
 	}
 
-	private static String floor(String iPart, String fPart)
-	{
+	private static String floor(final String iPart, final String fPart) {
 		if (fPart == null || fPart.length() == 0 || compare(fPart, "0") == 0) {
 			// An integer - return the integer
 			return iPart;
@@ -1309,49 +1340,48 @@ public class PatternRange
 
 	/**
 	 * Adds one to the given number.
-	 * 
+	 *
 	 * @param number
 	 *            the number
 	 * @return <code>number</code> + 1
 	 */
-	private static String addOne(String number)
-	{
+	private static String addOne(final String number) {
 		// TODO: check for better method
 		return new BigInteger(number).add(BigInteger.ONE).toString();
 	}
 
 	/**
 	 * Subtracts one from the given number.
-	 * 
+	 *
 	 * @param number
 	 *            the number
 	 * @return
 	 *         <code>number</code> - 1
 	 */
-	private static String subtractOne(String number)
-	{
+	private static String subtractOne(final String number) {
 		// TODO: check for better method
 		return new BigInteger(number).subtract(BigInteger.ONE).toString();
 	}
 
 	/**
 	 * Checks if <code>iPart</code> is a power of ten (for example, "100").
-	 * 
+	 *
 	 * @param iPart
 	 *            the integer part
 	 * @return <code>true</code>, if <code>iPart</code> is a power of ten
 	 */
-	private static boolean isPowerOfTen(String iPart)
-	{
+	private static boolean isPowerOfTen(final String iPart) {
 		boolean hasDigitOne = false;
 
 		for (int i = 0; i < iPart.length(); i++) {
 			if (iPart.charAt(i) != '0') {
-				if (hasDigitOne)
+				if (hasDigitOne) {
 					return false;
+				}
 
-				if (iPart.charAt(i) != '1')
+				if (iPart.charAt(i) != '1') {
 					return false;
+				}
 
 				hasDigitOne = true;
 			}
@@ -1362,8 +1392,7 @@ public class PatternRange
 
 	// private static String abovePowerTenInteger(int power, int base,
 	// String baseMode)
-	private static String abovePowerTenInteger(int power, RangeMode rangeMode)
-	{
+	private static String abovePowerTenInteger(final int power, final RangeMode rangeMode) {
 		// String range0 = digitRange(0, base - 1, baseMode);
 		// String range1 = digitRange(1, base - 1, baseMode);
 		String range0 = rangeMode.digitRange0();
@@ -1373,19 +1402,20 @@ public class PatternRange
 
 		result.append(range1).append(range0);
 
-		if (power == 0)
+		if (power == 0) {
 			result.append('*');
-		else if (power == 1)
+		} else if (power == 1) {
 			result.append('+');
-		else
+		} else {
 			result.append("{" + power + ",}");
+		}
 
 		return result.toString();
 	}
 
 	/**
 	 * Returns a regular expression that matches <code>-1 &lt; x &lt; 0</code>.
-	 * 
+	 *
 	 * @param optionalZero
 	 *            indicates whether the leading zero is option (e.g. -.5) or whether it must be included (e.g. -0.5)
 	 * @param base
@@ -1395,8 +1425,7 @@ public class PatternRange
 	 * @return the string
 	 */
 	// private static String matchesNegativeZeroFloats(boolean optionalZero, int base, String baseMode)
-	private static String matchesNegativeZeroFloats(RangeMode rangeMode)
-	{
+	private static String matchesNegativeZeroFloats(final RangeMode rangeMode) {
 		boolean optionalZero = rangeMode.optionalZeroNegative();
 
 		// TODO: add support for having optionalZero as false
@@ -1408,14 +1437,13 @@ public class PatternRange
 	/**
 	 * Surrounds the passed StringBuilder in a non-capture group (modifies
 	 * argument).
-	 * 
+	 *
 	 * @param sb
 	 *            the StringBuilder to surround
 	 * @return the RegEx for the given StringBuilder surrounded by a
 	 *         non-capture group.
 	 */
-	private static StringBuilder noncapture(StringBuilder sb)
-	{
+	private static StringBuilder noncapture(final StringBuilder sb) {
 		sb.insert(0, "(?:");
 		sb.append(')');
 
@@ -1424,18 +1452,16 @@ public class PatternRange
 
 	/**
 	 * Compares two integers numerically
-	 * 
+	 *
 	 * @param value1
 	 * @param value2
 	 * @return
 	 */
-	public static int compare(String value1, String value2)
-	{
+	public static int compare(final String value1, final String value2) {
 		return compare(value1, value2, true);
 	}
 
-	public static int compare(String value1, String value2, boolean treatNegativeZeroAsZero)
-	{
+	public static int compare(String value1, String value2, final boolean treatNegativeZeroAsZero) {
 		value1 = simplify(value1, treatNegativeZeroAsZero);
 		value2 = simplify(value2, treatNegativeZeroAsZero);
 
@@ -1462,25 +1488,24 @@ public class PatternRange
 
 	/**
 	 * Checks if the given number is negative or position.
-	 * 
+	 *
 	 * @param number
 	 *            the (string) number to check
-	 * 
+	 *
 	 * @return -1 if the number is negative (has a '-' as the first
 	 *         character); 1 otherwise.
 	 */
-	private static int sign_fin(String number)
-	{
+	private static int sign_fin(final String number) {
 		return number.charAt(0) == '-' ? -1 : 1;
 	}
 
 	/**
 	 * Simplifies the sign, and removes leading zeros.
-	 * 
+	 *
 	 * <p>Simplifies leading
 	 * "+" and "-" sign(s) to a single "-" sign if negative, and no sign, if
 	 * positive. Removes any leading zeros in the number.</p>
-	 * 
+	 *
 	 * @param number
 	 *            the (string) number to simplify
 	 * @return the inputted number, simplifying the sign and removing
@@ -1492,13 +1517,12 @@ public class PatternRange
 	// }
 
 	/**
-	 * 
+	 *
 	 * @param number
 	 * @param treatNegativeZeroAsZero
 	 * @return
 	 */
-	private static String simplify(String number, boolean treatNegativeZeroAsZero)
-	{
+	private static String simplify(final String number, final boolean treatNegativeZeroAsZero) {
 		int sign = 1, i = 0;
 
 		// simplify leading "+" and "-"
@@ -1528,14 +1552,13 @@ public class PatternRange
 
 	/**
 	 * Removes the leading zeros.
-	 * 
+	 *
 	 * @param number
 	 *            the number
-	 * 
+	 *
 	 * @return the number with leading zeros removed
 	 */
-	private static String removeLeadingZeros(String number)
-	{
+	private static String removeLeadingZeros(final String number) {
 		int start = 0;
 
 		while (start < number.length() - 1 && number.charAt(start) == '0') {
@@ -1547,7 +1570,7 @@ public class PatternRange
 
 	/**
 	 * Removes the trailing zeros.
-	 * 
+	 *
 	 * @param number
 	 *            the number
 	 * @return the number with trailing zeros removed
@@ -1565,26 +1588,25 @@ public class PatternRange
 
 	/**
 	 * Returns the numeric value of the character ch in the {@link Character#MAX_RADIX MAX_RADIX}.
-	 * 
+	 *
 	 * @param ch
 	 *            the character to be converted.
 	 * @return the numeric value represented by the character in the max
 	 *         radix.
 	 * @see Character#digit(char, int)
 	 */
-	private static int digit(char ch)
-	{
+	private static int digit(final char ch) {
 		return Character.digit(ch, MAX_RADIX);
 	}
 
-	private static String forDigit(int digit, String baseMode)
-	{
+	private static String forDigit(final int digit, final String baseMode) {
 		StringBuilder forDigit = new StringBuilder();
 		boolean containsL = baseMode.length() == 0 || baseMode.contains("L");
 		boolean containsU = baseMode.length() == 0 || baseMode.contains("U");
 
-		if (containsL)
+		if (containsL) {
 			forDigit.append(Character.forDigit(digit, MAX_RADIX));
+		}
 
 		if (containsU && digit >= 10 || !containsL) {
 			forDigit
@@ -1592,13 +1614,14 @@ public class PatternRange
 							: 0)));
 		}
 
-		return forDigit.length() == 1 ? forDigit.toString() : "[" +
-				forDigit + "]";
+		return forDigit.length() == 1 ? forDigit.toString()
+				: "[" +
+						forDigit + "]";
 	}
 
 	/**
 	 * Return a regular expression that matches the given range of digits.
-	 * 
+	 *
 	 * @param start
 	 *            the start digit
 	 * @param end
@@ -1608,10 +1631,10 @@ public class PatternRange
 	 * @return a regular expression that matches the given range of digits
 	 */
 	// TODO: make private
-	public static String digitRange(int start, int end, String baseMode)
-	{
-		if (start == end)
+	public static String digitRange(final int start, final int end, final String baseMode) {
+		if (start == end) {
 			return forDigit(start, baseMode);
+		}
 
 		StringBuilder digitRange = new StringBuilder("[");
 
@@ -1619,10 +1642,11 @@ public class PatternRange
 			char startDigit = Character.forDigit(start, MAX_RADIX);
 			char endDigit = Character.forDigit(Math.min(end, 9), MAX_RADIX);
 
-			if (startDigit == endDigit)
+			if (startDigit == endDigit) {
 				digitRange.append(startDigit);
-			else
+			} else {
 				digitRange.append(startDigit).append('-').append(endDigit);
+			}
 		}
 
 		if (end >= 10) {
@@ -1634,19 +1658,24 @@ public class PatternRange
 			char endDigit = Character.forDigit(end, MAX_RADIX);
 
 			if (containsL) {
-				if (startDigit == endDigit)
+				if (startDigit == endDigit) {
 					digitRange.append(startDigit);
-				else
-					digitRange.append(startDigit).append('-').append(
-							endDigit);
+				} else {
+					digitRange.append(startDigit)
+							.append('-')
+							.append(
+									endDigit);
+				}
 			}
 
 			if (containsU) {
-				if (startDigit == endDigit)
+				if (startDigit == endDigit) {
 					digitRange.append((char) (startDigit - ' '));
-				else
+				} else {
 					digitRange.append((char) (startDigit - ' '))
-							.append('-').append((char) (endDigit - ' '));
+							.append('-')
+							.append((char) (endDigit - ' '));
+				}
 			}
 		}
 
@@ -1655,7 +1684,7 @@ public class PatternRange
 
 	/**
 	 * Returns a String with the specified character repeated.
-	 * 
+	 *
 	 * @param character
 	 *            <code>char</code> to repeat
 	 * @param count
@@ -1665,14 +1694,15 @@ public class PatternRange
 	 * @throws IllegalArgumentException
 	 *             If <code>count</code> &lt; 0.
 	 */
-	private static String repeat(char character, int count)
-	{
-		if (count < 0)
+	private static String repeat(final char character, final int count) {
+		if (count < 0) {
 			throw new IllegalArgumentException(
 					"Count cannot be negative: " + count);
+		}
 
-		if (count == 0)
+		if (count == 0) {
 			return "";
+		}
 
 		StringBuilder result = new StringBuilder();
 
@@ -1685,7 +1715,7 @@ public class PatternRange
 
 	/**
 	 * Returns a String with the specified string repeated.
-	 * 
+	 *
 	 * @param string
 	 *            the string to repeat
 	 * @param count
@@ -1695,14 +1725,15 @@ public class PatternRange
 	 * @throws IllegalArgumentException
 	 *             If <code>count</code> &lt; 0.
 	 */
-	private static String repeat(String string, int count)
-	{
-		if (count < 0)
+	private static String repeat(final String string, final int count) {
+		if (count < 0) {
 			throw new IllegalArgumentException(
 					"Count cannot be negative: " + count);
+		}
 
-		if (count == 0)
+		if (count == 0) {
 			return "";
+		}
 
 		StringBuilder result = new StringBuilder();
 
@@ -1715,34 +1746,34 @@ public class PatternRange
 
 	/**
 	 * Adds leading zeros to the number, to ensure a specific size
-	 * 
+	 *
 	 * @param number
 	 *            the number
 	 * @param size
 	 *            the total size (leading zeros added, as necessary)
 	 * @return the number with a length of at least <code>size</code>, padding with leading zeros, as needed
 	 */
-	private static String withLeadingZeros(String number, int size)
-	{
-		if (number.length() >= size)
+	private static String withLeadingZeros(final String number, final int size) {
+		if (number.length() >= size) {
 			return number;
+		}
 
 		return repeat('0', size - number.length()) + number;
 	}
 
 	/**
 	 * Adds trailing zeros to the number, to ensure a specific size
-	 * 
+	 *
 	 * @param number
 	 *            the number
 	 * @param size
 	 *            the total size (trailing zeros added, as necessary)
 	 * @return the number with a length of at least <code>size</code>, padding with trailing zeros, as needed
 	 */
-	private static String withTrailingZeros(String number, int size)
-	{
-		if (number.length() >= size)
+	private static String withTrailingZeros(final String number, final int size) {
+		if (number.length() >= size) {
 			return number;
+		}
 
 		return number + repeat('0', size - number.length());
 	}

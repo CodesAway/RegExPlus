@@ -9,6 +9,7 @@ import java.util.Set;
 // Implemented to ensure type-erasure isn't a problem when implementing methods
 // Specifically, in Groovy, allows overloading operator using PatternFlags class
 public class PatternFlags implements PatternOptions, Set<PatternFlag>, Cloneable, Serializable {
+	private static final long serialVersionUID = 1L;
 	private final EnumSet<PatternFlag> flagsSet = EnumSet.noneOf(PatternFlag.class);
 
 	public PatternFlags(final PatternOptions... flags) {
@@ -69,7 +70,13 @@ public class PatternFlags implements PatternOptions, Set<PatternFlag>, Cloneable
 
 	@Override
 	public PatternFlags clone() {
-		return new PatternFlags(this.flagsSet);
+		try {
+			PatternFlags clone = (PatternFlags) super.clone();
+			clone.addAll(this.flagsSet);
+			return clone;
+		} catch (CloneNotSupportedException e) {
+			throw new AssertionError();
+		}
 	}
 
 	@Override

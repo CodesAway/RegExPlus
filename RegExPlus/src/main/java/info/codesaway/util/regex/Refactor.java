@@ -592,7 +592,7 @@ class Refactor {
 	 * Steps taken to prepare the regular expression to be refactored
 	 */
 	private void preRefactor() {
-		this.text = this.regex.toString();
+		this.text = this.regex;
 		this.matcher = RefactorUtility.preRefactor.matcher(this.regex);
 
 		// add a map from group 0 to group 0
@@ -3076,7 +3076,7 @@ class Refactor {
 					this.replaceWith(new String(Character.toChars(codePoint)));
 				}
 			}
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			throw this.error(INVALID_HEX_CODE, this.matcher.start());
 		}
 	}
@@ -3250,12 +3250,13 @@ class Refactor {
 				// skipQuoteBlock();
 				// }
 			}
-		} else if (this.match.startsWith("\\Q")) {
-			// Skip quote block
-
-			if (this.isInComments) {
-				this.checkForLineTerminator();
-			}
+			// Block isn't needed since duplicate of next block (FindBugs warning)
+			//		} else if (this.match.startsWith("\\Q")) {
+			//			// Skip quote block
+			//
+			//			if (this.isInComments) {
+			//				this.checkForLineTerminator();
+			//			}
 		} else if (this.isInComments) {
 			this.checkForLineTerminator();
 		}
