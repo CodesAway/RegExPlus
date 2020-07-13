@@ -2951,7 +2951,7 @@ public final class Matcher implements MatchResult, Cloneable {
 		// Iterator doesn't modify this Matcher
 		final Matcher matcher = this.clone().reset();
 
-		return new MatchResultIterator(this);
+		return new MatchResultIterator(matcher);
 	}
 
 	// suggestion from SpotBugs
