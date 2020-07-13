@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2020-07-12
 ### Added
 * asPredicate method
-  * No argument method mimics what Java added
+  * asPredicate() mimics what Java added in Java 8
   * Static asPredicate(String)
     * Takes String regex and creates Predicate
     * Uses getThreadLocal to reuse the Matcher, while ensuring each Thread has it's own (since they are not thread-safe)
