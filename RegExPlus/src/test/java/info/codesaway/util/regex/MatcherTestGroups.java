@@ -1,5 +1,6 @@
 package info.codesaway.util.regex;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThrows;
 
@@ -20,12 +21,20 @@ public class MatcherTestGroups {
 	/**
 	 * Matcher to use when matching
 	 */
-	private Matcher matcher;
+	private final Matcher matcher;
+
+	/**
+	 * Match result of the matcher
+	 *
+	 * <p>This is used to verify that everything works as a MatchResult
+	 * the same as the Matcher itself</p>
+	 */
+	private final MatchResult matchResult;
 
 	/**
 	 * the test case index
 	 */
-	private int index;
+	private final int index;
 
 	/**
 	 * Pattern to check
@@ -146,260 +155,263 @@ public class MatcherTestGroups {
 
 	/**
 	 * Returns the list of test cases
-	 * 
+	 *
 	 * @return the list of parameter tests
 	 */
 	// input
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] { { 0, "agi" }, { 1, "ahi" }, { 2, "bcdgi" }, { 3, "bcdhi" }, { 4, "efgi" },
-				{ 5, "efhi" }, });
+			{ 5, "efhi" }, });
 	}
 
 	/**
 	 * Constructs the test case
-	 * 
+	 *
 	 * @param index The test case index
 	 * @param input The character sequence to be matched
 	 */
-	public MatcherTestGroups(int index, String input) {
-		matcher = pattern.matcher(input);
-		matcher.find();
+	public MatcherTestGroups(final int index, final String input) {
+		this.matcher = pattern.matcher(input);
+		this.matcher.find();
 		this.index = index;
+		this.matchResult = this.matcher.toMatchResult();
 	}
 
 	/**
 	 * Checks if the actual match was the expected match
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group1() throws Exception {
-		matchGroup(group1, 1);
+		this.matchGroup(group1, 1);
 	}
 
 	/**
 	 * Checks if the actual mapped index was the expected index
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group1_index() throws Exception {
-		matchGroupIndex(group1_index, 1);
+		this.matchGroupIndex(group1_index, 1);
 	}
 
 	/**
 	 * Checks if the actual match was the expected match
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group2() throws Exception {
-		matchGroup(group2, 2);
+		this.matchGroup(group2, 2);
 	}
 
 	/**
 	 * Checks if the actual mapped index was the expected index
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group2_index() throws Exception {
-		matchGroupIndex(group2_index, 2);
+		this.matchGroupIndex(group2_index, 2);
 	}
 
 	/**
 	 * Checks if the actual match was the expected match
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group3() throws Exception {
-		matchGroup(group3, 3);
+		this.matchGroup(group3, 3);
 	}
 
 	/**
 	 * Checks if the actual mapped index was the expected index
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group3_index() throws Exception {
-		matchGroupIndex(group3_index, 3);
+		this.matchGroupIndex(group3_index, 3);
 	}
 
 	/**
 	 * Checks if the actual match was the expected match
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group4() throws Exception {
-		matchGroup(group4, 4);
+		this.matchGroup(group4, 4);
 	}
 
 	/**
 	 * Checks if the actual mapped index was the expected index
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group4_index() throws Exception {
-		matchGroupIndex(group4_index, 4);
+		this.matchGroupIndex(group4_index, 4);
 	}
 
 	/**
 	 * Checks if the actual match was the expected match
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group5() throws Exception {
-		matchGroup(group5, 5);
+		this.matchGroup(group5, 5);
 	}
 
 	/**
 	 * Checks if the actual mapped index was the expected index
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group5_index() throws Exception {
-		matchGroupIndex(group5_index, 5);
+		this.matchGroupIndex(group5_index, 5);
 	}
 
 	/**
 	 * Checks if the actual match was the expected match
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group6() throws Exception {
-		matchGroup(group6, 6);
+		this.matchGroup(group6, 6);
 	}
 
 	/**
 	 * Checks if the actual mapped index was the expected index
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void group6_index() throws Exception {
-		matchGroupIndex(group6_index, 6);
+		this.matchGroupIndex(group6_index, 6);
 	}
 
 	/**
 	 * Checks if the actual match was the expected match
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void groupTest() throws Exception {
-		matchGroup(groupTest, "test");
+		this.matchGroup(groupTest, "test");
 	}
 
 	/**
 	 * Checks if the actual mapped index was the expected index
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void groupTest_index() throws Exception {
-		matchGroupIndex(groupTest_index, "test");
+		this.matchGroupIndex(groupTest_index, "test");
 	}
 
 	/**
 	 * Checks if the actual match was the expected match
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void groupTest2() throws Exception {
-		matchGroup(groupTest2, "test2");
+		this.matchGroup(groupTest2, "test2");
 	}
 
 	/**
 	 * Checks if the actual mapped index was the expected index
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void groupTest2_index() throws Exception {
-		matchGroupIndex(groupTest2_index, "test2");
+		this.matchGroupIndex(groupTest2_index, "test2");
 	}
 
-	private void matchGroup(String[] tests, int group) throws Exception {
-		String expected = tests[index];
-		String actual = matcher.group(group);
+	private void matchGroup(final String[] tests, final int group) throws Exception {
+		String expected = tests[this.index];
+		String actual = this.matcher.group(group);
+
+		assertEquals(expected, actual);
+		assertThat(this.matchResult.group(group)).isEqualTo(expected);
+	}
+
+	private void matchGroupIndex(final int[] tests, final int group) throws Exception {
+		int expected = tests[this.index];
+		int actual = this.matcher.getGroupIndex(group);
 
 		assertEquals(expected, actual);
 	}
 
-	private void matchGroupIndex(int[] tests, int group) throws Exception {
-		int expected = tests[index];
-		int actual = matcher.getGroupIndex(group);
+	private void matchGroup(final String[] tests, final String group) throws Exception {
+		String expected = tests[this.index];
+		String actual = this.matcher.group(group);
 
 		assertEquals(expected, actual);
+		assertThat(this.matchResult.group(group)).isEqualTo(expected);
 	}
 
-	private void matchGroup(String[] tests, String group) throws Exception {
-		String expected = tests[index];
-		String actual = matcher.group(group);
-
-		assertEquals(expected, actual);
-	}
-
-	private void matchGroupIndex(int[] tests, String group) throws Exception {
-		int expected = tests[index];
-		int actual = matcher.getGroupIndex(group);
+	private void matchGroupIndex(final int[] tests, final String group) throws Exception {
+		int expected = tests[this.index];
+		int actual = this.matcher.getGroupIndex(group);
 
 		assertEquals(expected, actual);
 	}
 
 	/**
 	 * Tests that the specified group is not a group
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void notAGroup() throws Exception {
-		assertThrows("No group with name <NotAGroup>", IllegalArgumentException.class, () -> matcher.group("NotAGroup"));
+		assertThrows("No group with name <NotAGroup>", IllegalArgumentException.class, () -> this.matcher.group("NotAGroup"));
 	}
 
 	/**
 	 * Tests that the specified group is not a group
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	@Test
 	public void notAGroupAnyGroup() throws Exception {
-		assertThrows("No group with name <NotAGroup[]>", IllegalArgumentException.class, () -> matcher.group("NotAGroup[]"));
+		assertThrows("No group with name <NotAGroup[]>", IllegalArgumentException.class, () -> this.matcher.group("NotAGroup[]"));
 	}
 
 	/**
 	 * Tests that the specified group is not a group
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	public void notAGroup0() throws Exception {
-		assertThrows("No group NotAGroup[0]", IndexOutOfBoundsException.class, () -> matcher.group("NotAGroup", 0));
+		assertThrows("No group NotAGroup[0]", IndexOutOfBoundsException.class, () -> this.matcher.group("NotAGroup", 0));
 	}
 
 	/**
 	 * Tests that the specified group is not a group
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	public void notAGroup00() throws Exception {
-		assertThrows("No group NotAGroup[00]", IndexOutOfBoundsException.class, () -> matcher.group("NotAGroup[00]"));
+		assertThrows("No group NotAGroup[00]", IndexOutOfBoundsException.class, () -> this.matcher.group("NotAGroup[00]"));
 	}
 
 	/**
 	 * Tests that the specified group is an invalid group
-	 * 
+	 *
 	 * @throws Exception if the test fails
 	 */
 	public void invalidGroup() throws Exception {
-		assertThrows("No group [test][0]", IndexOutOfBoundsException.class, () -> matcher.group("[test]", 0));
+		assertThrows("No group [test][0]", IndexOutOfBoundsException.class, () -> this.matcher.group("[test]", 0));
 	}
 }
