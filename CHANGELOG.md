@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 * MatchResult no longer implements Iterable<MatchResult> (Matcher still does though)
+* Creates lots of default methods in MatchResult to handle basic functionality (makes easier to implement MatchResult interface)
  
 ### Fixed
 * Matcher.toMatchResult issue in Java 9
