@@ -8,12 +8,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [2.0.0] - 2020-08-30
 
+### Added
+* MatchResult.getEntry default method
+
 ### Changed
 * MatchResult no longer implements Iterable<MatchResult> (Matcher still does though)
 * Creates lots of default methods in MatchResult to handle basic functionality (makes easier to implement MatchResult interface)
  
 ### Fixed
-* Matcher.toMatchResult issue in Java 9
+* Matcher.toMatchResult ClassCastException in Java 9
 
 ### Removed
 * Matcher.clone (no longer cloneable, since cannot clone java.util.regex.Matcher)
