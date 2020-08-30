@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [2.0.0] - 2020-08-30
+Major version increase due to Java 9 changes that prevent RegExPlus from making Matcher cloneable.
+
+Version 2.0.0 can be used with Java 8 and above
 
 ### Added
 * MatchResult.getEntry default method
@@ -23,7 +26,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Matcher.size (returned the number of matches - not frequently used)
 * MatcherResult.size (returned number of groups)
 
+
+
 ## [1.1.0] - 2020-07-12
+**Java 9 and above** should use version 2.x.y due to bug in 1.x.y version (casting the Matcher.toMatchResult back to a Matcher, which is no longer valid starting with Java 9
+
 ### Added
 * asPredicate method
   * asPredicate() mimics what Java added in Java 8
