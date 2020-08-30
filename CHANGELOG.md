@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2020-08-30
+### Fixed
+* Matcher.toMatchResult issue in Java 9
+
+### Removed
+* Matcher.clone (no longer cloneable, since cannot clone java.util.regex.Matcher)
+
 ## [1.1.0] - 2020-07-12
 ### Added
 * asPredicate method
