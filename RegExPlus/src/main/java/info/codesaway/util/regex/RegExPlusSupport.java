@@ -6,7 +6,7 @@ package info.codesaway.util.regex;
  * <p>RegExPlus counterpart for the Groovy class, RegexSupport (org.codehaus.groovy.runtime.RegexSupport),
  * which stores the last java.util.regex.Matcher object.</p>
  */
-public class RegExPlusSupport {
+public final class RegExPlusSupport {
 	private static final ThreadLocal<Matcher> CURRENT_MATCHER = new ThreadLocal<>();
 
 	public static Matcher getLastMatcher() {

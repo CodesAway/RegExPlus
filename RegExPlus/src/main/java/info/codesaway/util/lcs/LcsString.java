@@ -73,8 +73,7 @@ public class LcsString extends LongestCommonSubsequence<Character> {
 	 *
 	 * @return the characters in the longest common subsequence
 	 */
-	public String getBacktrack()
-	{
+	public String getBacktrack() {
 		return this.getBacktrack("");
 	}
 
@@ -86,9 +85,8 @@ public class LcsString extends LongestCommonSubsequence<Character> {
 	 * @return the characters in the longest common subsequence separating each with
 	 *         the specified delimiter
 	 */
-	public String getBacktrack(final String delimiter)
-	{
-		List<Character> backtrack = backtrack();
+	public String getBacktrack(final String delimiter) {
+		List<Character> backtrack = this.backtrack();
 
 		StringBuilder result = new StringBuilder();
 

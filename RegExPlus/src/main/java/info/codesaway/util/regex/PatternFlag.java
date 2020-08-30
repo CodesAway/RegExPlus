@@ -72,6 +72,12 @@ public enum PatternFlag implements PatternOptions {
 	 */
 	VERIFY_GROUPS(Pattern.VERIFY_GROUPS, "v"),
 
+	/**
+	 * @see Pattern#UNICODE_CHARACTER_CLASS
+	 * @since 1.2
+	 */
+	UNICODE_CHARACTER_CLASS(Pattern.UNICODE_CHARACTER_CLASS, "U");
+
 	;
 
 	private final int flag;

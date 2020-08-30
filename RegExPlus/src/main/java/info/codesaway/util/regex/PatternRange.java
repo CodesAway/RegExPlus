@@ -18,7 +18,7 @@ import java.util.Locale;
  * Functions used to match a range of values e.g. 1 or 001..999; 001..999;
  * 1..999
  */
-public class PatternRange {
+public final class PatternRange {
 	/**
 	 * Pattern used to match a range mode.
 	 *

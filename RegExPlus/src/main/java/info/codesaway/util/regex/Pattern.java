@@ -1490,6 +1490,29 @@ public final class Pattern implements Serializable {
 	public static final int CANON_EQ = java.util.regex.Pattern.CANON_EQ;
 
 	/**
+	 * Enables the Unicode version of <i>Predefined character classes</i> and
+	 * <i>POSIX character classes</i>.
+	 *
+	 * <p> When this flag is specified then the (US-ASCII only)
+	 * <i>Predefined character classes</i> and <i>POSIX character classes</i>
+	 * are in conformance with
+	 * <a href="http://www.unicode.org/reports/tr18/"><i>Unicode Technical
+	 * Standard #18: Unicode Regular Expression</i></a>
+	 * <i>Annex C: Compatibility Properties</i>.
+	 * <p>
+	 * The UNICODE_CHARACTER_CLASS mode can also be enabled via the embedded
+	 * flag expression&nbsp;<tt>(?U)</tt>.
+	 * <p>
+	 * The flag implies UNICODE_CASE, that is, it enables Unicode-aware case
+	 * folding.
+	 * <p>
+	 * Specifying this flag may impose a performance penalty.  </p>
+	 * @since 1.2
+	 */
+	// Added as part of Java 1.7
+	public static final int UNICODE_CHARACTER_CLASS = java.util.regex.Pattern.UNICODE_CHARACTER_CLASS;
+
+	/**
 	 * Allows duplicate capture group names in pattern.
 	 *
 	 * <p>If a pattern has this flag set, multiple capture groups with the same
@@ -2338,6 +2361,7 @@ public final class Pattern implements Serializable {
 		String explicitCapture = (flags & EXPLICIT_CAPTURE) != 0 ? "n" : "";
 		String perlOctal = (flags & PERL_OCTAL) != 0 ? "o" : "";
 		String verifyGroups = (flags & VERIFY_GROUPS) != 0 ? "v" : "";
+		String unicodeCharacterClass = (flags & UNICODE_CHARACTER_CLASS) != 0 ? "U" : "";
 
 		/* No inline modifier */
 		int canonEq = (flags & CANON_EQ) != 0 ? CANON_EQ : 0;
@@ -2360,7 +2384,7 @@ public final class Pattern implements Serializable {
 			return lazyCompile(newFlags + quote(pattern.pattern()));
 		} else {
 			String newFlags = unixLines + caseInsensitive + comments + multiline + dotall + unicodeCase + duplicateNames
-					+ explicitCapture + perlOctal + verifyGroups;
+					+ explicitCapture + perlOctal + verifyGroups + unicodeCharacterClass;
 
 			if (newFlags.length() == 0) {
 				// No changes are necessary, since no flags can be inlined
@@ -2400,6 +2424,7 @@ public final class Pattern implements Serializable {
 		String explicitCapture = this.has(EXPLICIT_CAPTURE) ? "n" : "";
 		String perlOctal = this.has(PERL_OCTAL) ? "o" : "";
 		String verifyGroups = this.has(VERIFY_GROUPS) ? "v" : "";
+		String unicodeCharacterClass = this.has(UNICODE_CHARACTER_CLASS) ? "U" : "";
 
 		/* No inline modifier */
 		int canonEq = this.has(CANON_EQ) ? CANON_EQ : 0;
@@ -2424,7 +2449,7 @@ public final class Pattern implements Serializable {
 		} else {
 			@SuppressWarnings("hiding")
 			String flags = unixLines + caseInsensitive + comments + multiline + dotall + unicodeCase + duplicateNames
-					+ explicitCapture + perlOctal + verifyGroups;
+					+ explicitCapture + perlOctal + verifyGroups + unicodeCharacterClass;
 
 			if (flags.length() == 0) {
 				// No changes are necessary, since no flags can be inlined

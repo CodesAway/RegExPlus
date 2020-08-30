@@ -10,6 +10,7 @@ import static info.codesaway.util.regex.Pattern.EXPLICIT_CAPTURE;
 import static info.codesaway.util.regex.Pattern.MULTILINE;
 import static info.codesaway.util.regex.Pattern.PERL_OCTAL;
 import static info.codesaway.util.regex.Pattern.UNICODE_CASE;
+import static info.codesaway.util.regex.Pattern.UNICODE_CHARACTER_CLASS;
 import static info.codesaway.util.regex.Pattern.UNIX_LINES;
 import static info.codesaway.util.regex.Pattern.VERIFY_GROUPS;
 import static info.codesaway.util.regex.Pattern.getMappingName;
@@ -1939,6 +1940,10 @@ class Refactor {
 			this.flags |= UNICODE_CASE;
 		}
 
+		if (onFlags.contains("U")) {
+			this.flags |= UNICODE_CHARACTER_CLASS;
+		}
+
 		if (offFlags != null) {
 			if (offFlags.contains("x")) {
 				this.flags &= ~COMMENTS;
@@ -1979,6 +1984,10 @@ class Refactor {
 
 			if (offFlags.contains("u")) {
 				this.flags &= ~UNICODE_CASE;
+			}
+
+			if (offFlags.contains("U")) {
+				this.flags &= ~UNICODE_CHARACTER_CLASS;
 			}
 		}
 	}

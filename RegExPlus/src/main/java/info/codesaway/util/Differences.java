@@ -1,46 +1,43 @@
 package info.codesaway.util;
 
-import info.codesaway.util.lcs.LcsString;
-
 import java.util.List;
 import java.util.Stack;
+
+import info.codesaway.util.lcs.LcsString;
 
 /**
  * List of differences
  */
-public class Differences
-{
+public final class Differences {
 	/**
 	 * List of {@link Differences}
 	 */
-	private Stack<Difference> changes;
+	private final Stack<Difference> changes;
 
 	/**
 	 * Constructs a new differences object initialized with no changes.
 	 */
-	public Differences()
-	{
-		changes = new Stack<Difference>();
+	public Differences() {
+		this.changes = new Stack<>();
 	}
 
 	/**
 	 * Adds all the differences in the passed object to this
 	 * <code>Differences</code> object
-	 * 
+	 *
 	 * @param differences
 	 *            differences to add
 	 * @return <code>true</code> if this collection changed as a result of the
 	 *         call
 	 */
-	public boolean addAll(Differences differences)
-	{
+	public boolean addAll(final Differences differences) {
 		return this.changes.addAll(differences.changes);
 	}
 
 	/**
 	 * Applies each change, in order, to the original string and outputs the
 	 * result
-	 * 
+	 *
 	 * @param original
 	 *            original string on which to apply the changes
 	 */
@@ -62,20 +59,19 @@ public class Differences
 	/**
 	 * Returns the original index (before the list of changes were applied)
 	 * for the specified index.
-	 * 
+	 *
 	 * @param newIndex
 	 *            the current index
 	 * @return original index (before changes were applied)
 	 * @throws IllegalArgumentException
 	 *             If the specified index was not in the original string
 	 */
-	public int getOriginalIndex(int newIndex)
-	{
+	public int getOriginalIndex(final int newIndex) {
 		int currentIndex = newIndex;
 
 		// go from the top of the stack, down (descending order)
-		for (int i = changes.size() - 1; i >= 0; i--) {
-			currentIndex = changes.get(i).getOriginalIndexStep(currentIndex);
+		for (int i = this.changes.size() - 1; i >= 0; i--) {
+			currentIndex = this.changes.get(i).getOriginalIndexStep(currentIndex);
 		}
 
 		return currentIndex;
@@ -83,7 +79,7 @@ public class Differences
 
 	/**
 	 * Returns the string representation of the internal changes.
-	 * 
+	 *
 	 * @return the internal changes as a string
 	 */
 	// @Override
@@ -94,7 +90,7 @@ public class Differences
 
 	/**
 	 * Adds a new difference to the list of changes.
-	 * 
+	 *
 	 * @param index
 	 *            index for the insertion
 	 * @param string
@@ -110,7 +106,7 @@ public class Differences
 
 	/**
 	 * Adds a new difference to the list of changes.
-	 * 
+	 *
 	 * @param index
 	 *            index for the character to remove
 	 */
@@ -121,10 +117,10 @@ public class Differences
 
 	/**
 	 * Adds a new difference to the list of changes.
-	 * 
+	 *
 	 * <p>If <code>start</code> and <code>end</code> are equal, no difference
 	 * will be added.
-	 * 
+	 *
 	 * @param start
 	 *            the begin index, inclusive
 	 * @param end
@@ -140,14 +136,14 @@ public class Differences
 
 	/**
 	 * Adds a new difference to the list of changes.
-	 * 
+	 *
 	 * <p><b>Implementation notes</b>:</p>
-	 * 
+	 *
 	 * <p>The replacement consists of the insertions and deletions required to
 	 * change the original string to the replacement string.</p>
-	 * 
+	 *
 	 * <p>The differences are detected using the {@link LcsString#getDiff()} method.</p>
-	 * 
+	 *
 	 * @param start
 	 *            initial position for the replacement
 	 * @param original
@@ -169,14 +165,14 @@ public class Differences
 
 	/**
 	 * Adds a new difference to the list of changes.
-	 * 
+	 *
 	 * <p><b>Implementation notes</b>:</p>
-	 * 
+	 *
 	 * <p>The replacement consists of the insertions and deletions required to
 	 * change the original string to the replacement string.</p>
-	 * 
+	 *
 	 * <p>The differences are detected using the {@link LcsString#getDiff0()} method.</p>
-	 * 
+	 *
 	 * @param start
 	 *            initial position for the replacement
 	 * @param original
@@ -184,22 +180,22 @@ public class Differences
 	 * @param replacement
 	 *            the replacement string
 	 */
-	public void replace0(int start, String original, String replacement)
-	{
-		if (original.equals(replacement))
+	public void replace0(final int start, final String original, final String replacement) {
+		if (original.equals(replacement)) {
 			return;
+		}
 
 		LcsString seq = new LcsString(original, replacement);
 
 		int end = start + original.length();
 
-		changes.add(new ReplaceDifferencePlus(start, end, replacement, seq
+		this.changes.add(new ReplaceDifferencePlus(start, end, replacement, seq
 				.getDiff0()));
 	}
 
 	/**
 	 * Adds a new difference to the list of changes.
-	 * 
+	 *
 	 * @param start
 	 *            the begin index, inclusive
 	 * @param end
@@ -215,18 +211,16 @@ public class Differences
 	/**
 	 * Class to handle an insertion
 	 */
-	private static class InsertDifference extends Difference
-	{
+	private static class InsertDifference extends Difference {
 		/**
 		 * Constructs a new <code>InsertDifference</code>
-		 * 
+		 *
 		 * @param index
 		 *            index for the insertion
 		 * @param insertion
 		 *            the string to insert
 		 */
-		InsertDifference(int index, String insertion)
-		{
+		InsertDifference(final int index, final String insertion) {
 			// super(DifferenceOperation.INSERT, index,
 			// index + insertion.length(), insertion);
 			super(DifferenceOperation.INSERT, index, index + insertion.length());
@@ -251,10 +245,9 @@ public class Differences
 		 * {@inheritDoc}
 		 */
 		@Override
-		protected boolean inOriginal(int currentIndex)
-		{
-			int start = getStart();
-			int end = getEnd();
+		protected boolean inOriginal(final int currentIndex) {
+			int start = this.getStart();
+			int end = this.getEnd();
 
 			return currentIndex < start || currentIndex > end;
 		}
@@ -263,12 +256,12 @@ public class Differences
 		 * {@inheritDoc}
 		 */
 		@Override
-		protected int getOriginalIndexStep_Private(int currentIndex)
-		{
+		protected int getOriginalIndexStep_Private(final int currentIndex) {
 			int newIndex = currentIndex;
 
-			if (currentIndex > getStart())
-				newIndex -= getLength();
+			if (currentIndex > this.getStart()) {
+				newIndex -= this.getLength();
+			}
 
 			return newIndex;
 		}
@@ -277,18 +270,16 @@ public class Differences
 	/**
 	 * Class to handle a deletion
 	 */
-	private static class DeleteDifference extends Difference
-	{
+	private static class DeleteDifference extends Difference {
 		/**
 		 * Constructs a new <code>DeleteDifference</code>
-		 * 
+		 *
 		 * @param start
 		 *            the begin index, inclusive
 		 * @param end
 		 *            the end index, exclusive.
 		 */
-		DeleteDifference(int start, int end)
-		{
+		DeleteDifference(final int start, final int end) {
 			// super(DifferenceOperation.DELETE, start, end, "");
 			super(DifferenceOperation.DELETE, start, end);
 		}
@@ -312,12 +303,12 @@ public class Differences
 		 * {@inheritDoc}
 		 */
 		@Override
-		protected int getOriginalIndexStep_Private(int currentIndex)
-		{
+		protected int getOriginalIndexStep_Private(final int currentIndex) {
 			int newIndex = currentIndex;
 
-			if (currentIndex >= getStart())
-				newIndex += getLength();
+			if (currentIndex >= this.getStart()) {
+				newIndex += this.getLength();
+			}
 
 			return newIndex;
 		}
@@ -332,16 +323,15 @@ public class Differences
 	 * deletions to change the original string to the replacement string.
 	 * </p>
 	 */
-	private static class ReplaceDifferencePlus extends Difference
-	{
+	private static class ReplaceDifferencePlus extends Difference {
 		/**
 		 * List of differences in this replacement
 		 */
-		private Stack<Difference> differences;
+		private final Stack<Difference> differences;
 
 		/**
 		 * Constructs a new <code>ReplaceDifferencePlus</code>
-		 * 
+		 *
 		 * @param start
 		 *            the begin index, inclusive
 		 * @param end
@@ -351,13 +341,12 @@ public class Differences
 		 * @param diff
 		 *            the list of differences
 		 */
-		ReplaceDifferencePlus(int start, int end, String replacement,
-				List<String> diff)
-		{
+		ReplaceDifferencePlus(final int start, final int end, final String replacement,
+				final List<String> diff) {
 			// super(DifferenceOperation.REPLACE, start, end, replacement);
 			super(DifferenceOperation.REPLACE, start, end);
 
-			differences = new Stack<Difference>();
+			this.differences = new Stack<>();
 
 			int itemStart = start;
 
@@ -368,13 +357,13 @@ public class Differences
 				if (string.charAt(0) == '+') {
 					// insert
 
-					differences.add(new InsertDifference(start, string
+					this.differences.add(new InsertDifference(start, string
 							.substring(1)));
 				} else if (string.charAt(0) == '-') {
 					// remove
 
 					int itemEnd = start + length;
-					differences.add(new DeleteDifference(itemStart, itemEnd));
+					this.differences.add(new DeleteDifference(itemStart, itemEnd));
 				}
 			}
 		}
@@ -401,17 +390,16 @@ public class Differences
 
 		/**
 		 * {@inheritDoc}
-		 * 
+		 *
 		 * @throws IllegalArgumentException {@inheritDoc}
 		 */
 		@Override
-		protected int getOriginalIndexStep_Private(int currentIndex)
-		{
+		protected int getOriginalIndexStep_Private(final int currentIndex) {
 			int newIndex = currentIndex;
 
 			// go from the top of the stack, down (descending order)
-			for (int i = differences.size() - 1; i >= 0; i--) {
-				Difference difference = differences.get(i);
+			for (int i = this.differences.size() - 1; i >= 0; i--) {
+				Difference difference = this.differences.get(i);
 
 				newIndex = difference.getOriginalIndexStep(newIndex);
 			}
@@ -486,8 +474,7 @@ public class Differences
 	/**
 	 * Abstract class for a difference
 	 */
-	private static abstract class Difference
-	{
+	private static abstract class Difference {
 		/**
 		 * The difference operation for this difference
 		 */
@@ -510,7 +497,7 @@ public class Differences
 
 		/**
 		 * Constructor for an insertion
-		 * 
+		 *
 		 * @param diffOp
 		 *            the difference operation for this difference
 		 * @param start
@@ -524,8 +511,7 @@ public class Differences
 		 * @param replacement
 		 * the inserted string or replacement string
 		 */
-		Difference(DifferenceOperation diffOp, int start, int end)
-		{
+		Difference(final DifferenceOperation diffOp, final int start, final int end) {
 			this.diffOp = diffOp;
 			this.start = start;
 			this.end = end;
@@ -534,48 +520,44 @@ public class Differences
 
 		/**
 		 * Returns the difference operation for this difference.
-		 * 
+		 *
 		 * @return the difference operation for this difference
 		 */
 		@SuppressWarnings("unused")
-		public DifferenceOperation getDiffOp()
-		{
+		public DifferenceOperation getDiffOp() {
 			return this.diffOp;
 		}
 
 		/**
 		 * Returns the start index for the difference.
-		 * 
+		 *
 		 * @return the start index for the difference
 		 */
-		public int getStart()
-		{
+		public int getStart() {
 			return this.start;
 		}
 
 		/**
 		 * Returns the start index for the difference.
-		 * 
+		 *
 		 * @return the start index for the difference
 		 */
-		public int getEnd()
-		{
+		public int getEnd() {
 			return this.end;
 		}
 
 		/**
 		 * Returns the length of the replacement
-		 * 
+		 *
 		 * @return the length of the replacement
 		 */
-		public int getLength()
-		{
-			return getEnd() - getStart();
+		public int getLength() {
+			return this.getEnd() - this.getStart();
 		}
 
 		/**
 		 * Returns the inserted / replacement string
-		 * 
+		 *
 		 * @return the inserted / replacement string
 		 */
 		// public String getReplacement()
@@ -585,7 +567,7 @@ public class Differences
 
 		/**
 		 * Returns a string representation of this difference.
-		 * 
+		 *
 		 * @return a string representation of this difference
 		 */
 		// @Override
@@ -595,20 +577,19 @@ public class Differences
 
 		/**
 		 * Returns whether the given index is in the original value.
-		 * 
+		 *
 		 * @param currentIndex
 		 *            the current index
-		 * 
+		 *
 		 * @return whether the given index is in the original value
 		 */
-		protected boolean inOriginal(int currentIndex)
-		{
+		protected boolean inOriginal(final int currentIndex) {
 			return true;
 		}
 
 		/**
 		 * Returns the index prior to performing this difference.
-		 * 
+		 *
 		 * @param currentIndex
 		 *            the current index
 		 * @return the offset by which this Difference affects the original
@@ -616,18 +597,18 @@ public class Differences
 		 * @throws IllegalArgumentException
 		 *             If the specified index was not in the original string
 		 */
-		final int getOriginalIndexStep(int currentIndex)
-		{
-			if (!inOriginal(currentIndex))
+		final int getOriginalIndexStep(final int currentIndex) {
+			if (!this.inOriginal(currentIndex)) {
 				throw new IllegalArgumentException(
 						"The specified index was not in the original string");
+			}
 
-			return getOriginalIndexStep_Private(currentIndex);
+			return this.getOriginalIndexStep_Private(currentIndex);
 		}
 
 		/**
 		 * Returns the index prior to performing this difference.
-		 * 
+		 *
 		 * @param currentIndex
 		 *            the current index
 		 * @return the offset by which this <code>Difference</code> affects the
@@ -641,8 +622,7 @@ public class Differences
 	/**
 	 * Enumeration of difference operations
 	 */
-	private static enum DifferenceOperation
-	{
+	private static enum DifferenceOperation {
 
 		/**
 		 * An insertion operation
