@@ -23,9 +23,9 @@ Version 2.0.0 can be used with Java 8 and above
 
 ### Removed
 * Matcher.clone (no longer cloneable, since cannot clone java.util.regex.Matcher)
+* Matcher.isMatchResult (since now it would always return false and is no longer needed)
 * Matcher.size (returned the number of matches - not frequently used)
 * MatcherResult.size (returned number of groups)
-
 
 
 ## [1.1.0] - 2020-07-12
