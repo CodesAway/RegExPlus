@@ -7,11 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [2.0.0] - 2020-08-30
+
+### Changed
+* MatchResult no longer implements Iterable<MatchResult> (Matcher still does though)
+ 
 ### Fixed
 * Matcher.toMatchResult issue in Java 9
 
 ### Removed
 * Matcher.clone (no longer cloneable, since cannot clone java.util.regex.Matcher)
+* Matcher.size (returned the number of matches - not frequently used)
+* MatcherResult.size (returned number of groups)
 
 ## [1.1.0] - 2020-07-12
 ### Added
