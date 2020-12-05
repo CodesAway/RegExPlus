@@ -9,13 +9,9 @@ package info.codesaway.util.regex;
 
 // TODO: overload matched method to allow checking for matched group without throwing error if it doesn't exist
 import static info.codesaway.util.regex.Pattern.getMappingName;
-import static info.codesaway.util.regex.Pattern.wrapIndex;
 import static info.codesaway.util.regex.RefactorUtility.fullGroupName;
-import static info.codesaway.util.regex.RefactorUtility.parseInt;
 
 import java.lang.reflect.Field;
-import java.util.AbstractList;
-import java.util.AbstractSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -24,8 +20,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Set;
 
 import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
 
@@ -99,7 +93,7 @@ import edu.umd.cs.findbugs.annotations.SuppressFBWarnings;
  * <p>Instances of this class are not safe for use by multiple concurrent
  * threads.</p>
  */
-public final class Matcher implements MatchResult, Cloneable {
+public final class Matcher implements MatchResult, Iterable<MatchResult> {
 	/**
 	 * The internal {@link java.util.regex.Matcher} object for this matcher.
 	 */
@@ -143,11 +137,6 @@ public final class Matcher implements MatchResult, Cloneable {
 	 * @since 0.2
 	 */
 	private boolean treatNullAsEmptyString = false;
-
-	/**
-	 * @since 0.2
-	 */
-	private boolean isMatchResult = false;
 
 	/**
 	 * @param matcher the Java Matcher
@@ -247,39 +236,15 @@ public final class Matcher implements MatchResult, Cloneable {
 	 * @return a <code>MatchResult</code> with the state of this matcher
 	 */
 	public MatchResult toMatchResult() {
-		if (this.isMatchResult()) {
-			return this;
-		}
-
-		Matcher matcher = this.clone();
-		matcher.isMatchResult(true);
-
-		return matcher;
+		return this.toMatchResult(this.text.toString());
 	}
 
-	@Override
-	public Matcher clone() {
-		return new Matcher(
-				(java.util.regex.Matcher) this.usedMatcher.toMatchResult(),
-				this.parentPattern, this.text.toString()).treatNullAsEmptyString(this.treatNullAsEmptyString);
-	}
-
-	/**
-	 * @return <code>true</code> if this object is a match result
-	 * @since 0.2
-	 */
-	public boolean isMatchResult() {
-		return this.isMatchResult;
-	}
-
-	/**
-	 *
-	 * @param isMatchResult <code>true</code> if this object is a match result
-	 * @since 0.2
-	 */
-	private Matcher isMatchResult(final boolean isMatchResult) {
-		this.isMatchResult = isMatchResult;
-		return this;
+	private MatchResult toMatchResult(final String text) {
+		return new ImmutableMatchResult(
+				this.pattern(),
+				this.usedMatcher.toMatchResult(),
+				text,
+				this.treatNullAsEmptyString());
 	}
 
 	/**
@@ -574,37 +539,6 @@ public final class Matcher implements MatchResult, Cloneable {
 
 	/**
 	 * Returns the occurrence of the first <i>matched</i> group with the given
-	 * index.
-	 *
-	 * <p><a href="Pattern.html#branchreset">Branch reset</a> patterns allow
-	 * multiple capture groups with the same group index to exist.
-	 * This method offers a way to determine which occurrence matched.</p>
-	 *
-	 * @param groupIndex
-	 *            the name of the group
-	 *
-	 * @return the occurrence for the first <i>matched</i> group with the given
-	 *         index
-	 *
-	 */
-	@Override
-	public int occurrence(final int groupIndex) {
-		try {
-			String groupName = wrapIndex(getAbsoluteGroupIndex(groupIndex,
-					this.groupCount()));
-
-			if (this.groupCount(groupName) == 0) {
-				throw noGroup(groupIndex);
-			}
-
-			return this.occurrence(groupName);
-		} catch (IndexOutOfBoundsException e) {
-			throw noGroup(groupIndex);
-		}
-	}
-
-	/**
-	 * Returns the occurrence of the first <i>matched</i> group with the given
 	 * name.
 	 *
 	 * <p><a href="Pattern.html#branchreset">Branch reset</a> patterns and the {@link Pattern#DUPLICATE_NAMES} flag
@@ -620,26 +554,7 @@ public final class Matcher implements MatchResult, Cloneable {
 	 */
 	@Override
 	public int occurrence(final String groupName) {
-		int groupCount = this.groupCount(groupName);
-
-		if (groupCount == 0) {
-			throw noNamedGroup(groupName);
-		}
-
-		int occurrence = 0;
-		Integer groupIndexI;
-
-		while ((groupIndexI = this.parentPattern.getMappedIndex(groupName,
-				++occurrence)) != null) {
-			// if matched group
-
-			if (this.usedMatcher.start(groupIndexI) != -1) {
-				return occurrence;
-			}
-		}
-
-		// if no group matched anything (i.e. all null)
-		return -1;
+		return MatcherHelper.occurrence(this, this.usedMatcher, groupName);
 	}
 
 	/**
@@ -952,158 +867,6 @@ public final class Matcher implements MatchResult, Cloneable {
 		return (matched ? this.usedMatcher.group(mappedIndex) : defaultValue);
 	}
 
-	/**
-	 * Returns the number of capturing groups in this matcher's pattern.
-	 *
-	 * <p>Group zero denotes the entire pattern by convention. It is not
-	 * included in this count.
-	 *
-	 * <p>Any non-negative integer smaller than or equal to the value returned
-	 * by this method is guaranteed to be a valid group index for this
-	 * matcher.</p>
-	 *
-	 * @return The number of capturing groups in this matcher's pattern
-	 */
-	@Override
-	public int groupCount() {
-		return this.parentPattern.groupCount();
-	}
-
-	/**
-	 * Returns the number of capturing groups (with the given group index) in
-	 * this matcher's pattern.
-	 *
-	 * <p><b>Note</b>: in most cases, this return will be 1 - the only exception
-	 * is in the case
-	 * of a "branch reset" pattern, where there may be multiple groups with the
-	 * same group index.
-	 *
-	 * <p>For example, </p>
-	 * <blockquote><pre><code><span style="color: green"
-	 * >// Outputs 2, since there are two groups <!--
-	 * -->that have the group index of 1</span>
-	 * System.out.println(Pattern.compile("(?|(1a)|(1b))").groupCount(1));</code
-	 * ></pre>
-	 * </blockquote>
-	 *
-	 * <p>Group zero denotes the entire pattern by convention. It is not
-	 * included in this count.</p>
-	 *
-	 * <p>Any non-negative integer smaller than or equal to the value returned
-	 * by this method is guaranteed to be a valid occurrence (for a <a
-	 * href="#group">group</a>,
-	 * <i>groupName</i><tt>[</tt><i>occurrence</i><tt>]</tt>) for this
-	 * matcher.</p>
-	 *
-	 * <p><b>Note</b>: unlike other methods, this
-	 * method doesn't throw an exception if the specified group doesn't exist.
-	 * Instead, zero is returned, since the number of groups with the
-	 * (non-existent) group name is zero.
-	 *
-	 * @param group
-	 *            The index of a capturing group in this matcher's pattern
-	 *
-	 * @return The number of capturing groups (with the given group index) in
-	 *         this matcher's pattern
-	 * @since 0.2
-	 */
-	@Override
-	public int groupCount(final int group) {
-		return this.parentPattern.groupCount(group);
-	}
-
-	/**
-	 * Returns the number of capturing groups (with the given group name) in
-	 * this matcher's pattern.
-	 *
-	 * <p>Group zero denotes the entire pattern by convention. It is not
-	 * included in this count.</p>
-	 *
-	 * <p>Any non-negative integer smaller than or equal to the value returned
-	 * by this method is guaranteed to be a valid occurrence (for a group,
-	 * <i>groupName</i><tt>[</tt><i>occurrence</i><tt>]</tt>) for this matcher.
-	 * </p>
-	 *
-	 * <p>If <code>groupName</code> is the empty string, this method's return is
-	 * equal to the return from {@link #groupCount()}.</p>
-	 *
-	 * <p><b>Note</b>: unlike other methods, this
-	 * method doesn't throw an exception if the specified group doesn't exist.
-	 * Instead, zero is returned, since the number of groups with the given
-	 * (non-existent) group name is zero.</p>
-	 *
-	 * @param groupName
-	 *            The group name for a capturing group in this matcher's pattern
-	 *
-	 * @return The number of capturing groups (with the given group name) in
-	 *         this matcher's pattern
-	 */
-	@Override
-	public int groupCount(final String groupName) {
-		return this.parentPattern.groupCount(groupName);
-	}
-
-	/**
-	 * Indicates whether this matcher has any capturing groups.
-	 *
-	 * @return <code>true</code> if this matcher has at least one capturing group; otherwise, <code>false</code>
-	 *
-	 * @since 0.2
-	 */
-	@Override
-	public boolean hasGroup() {
-		// return groupCount() > 0;
-		return this.parentPattern.hasGroup();
-	}
-
-	/**
-	 * Indicates whether this matcher contains the specified group.
-	 *
-	 * @param group
-	 *            The group index for a capturing group in this matcher's pattern
-	 * @return <code>true</code> if this matcher contains the specified group; otherwise, <code>false</code>.
-	 *
-	 * @since 0.2
-	 */
-	@Override
-	public boolean hasGroup(final int group) {
-		// return containsKey(group);
-		// return groupCount(group) > 0;
-		return this.parentPattern.hasGroup(group);
-	}
-
-	/**
-	 * Indicates whether this matcher contains the specified group.
-	 *
-	 * @param group
-	 *            A capturing group in this matcher's pattern
-	 * @return <code>true</code> if this matcher contains the specified group; otherwise, <code>false</code>.
-	 *
-	 * @since 0.2
-	 */
-	@Override
-	public boolean hasGroup(final String group) {
-		// return containsKey(group);
-		return this.parentPattern.hasGroup(group);
-	}
-
-	/**
-	 * Indicates whether this matcher contains the specified group.
-	 *
-	 * @param groupName
-	 *            The group name for a capturing group in this matcher's pattern
-	 *
-	 * @param occurrence
-	 *            The occurrence of the specified group name
-	 * @return <code>true</code> if this matcher contains the specified group; otherwise, <code>false</code>.
-	 *
-	 * @since 0.2
-	 */
-	@Override
-	public boolean hasGroup(final String groupName, final int occurrence) {
-		// return hasGroup(groupName + wrapIndex(occurrence));
-		return this.parentPattern.hasGroup(groupName, occurrence);
-	}
 
 	/**
 	 * Attempts to match the entire region against the pattern.
@@ -1117,138 +880,6 @@ public final class Matcher implements MatchResult, Cloneable {
 	public boolean matches() {
 		// TODO: use internalMatcher or useMatcher ??
 		return this.internalMatcher.matches();
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public boolean matched() {
-		try {
-			return this.start() != -1;
-		} catch (Exception e) {
-			return false;
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @throws IllegalStateException
-	 *             If no match has yet been attempted,
-	 *             or if the previous match operation failed
-	 *
-	 * @throws IndexOutOfBoundsException
-	 *             If there is no capturing group in the pattern
-	 *             with the given index
-	 */
-	@Override
-	public boolean matched(final int group) {
-		return this.matched(group, true);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @throws IllegalStateException
-	 *             If no match has yet been attempted,
-	 *             or if the previous match operation failed
-	 *
-	 * @throws IndexOutOfBoundsException
-	 *             If <code>validateGroup</code> is <code>true</code> and there is no capturing group in the pattern
-	 *             with the given index
-	 */
-	@Override
-	public boolean matched(final int group, final boolean validateGroup) {
-		try {
-			return this.start(group) != -1;
-		} catch (IndexOutOfBoundsException e) {
-			if (validateGroup) {
-				throw e;
-			}
-
-			return false;
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @throws IllegalStateException
-	 *             If no match has yet been attempted,
-	 *             or if the previous match operation failed
-	 *
-	 * @throws IllegalArgumentException
-	 *             If there is no capturing group in the pattern
-	 *             of the given group
-	 */
-	@Override
-	public boolean matched(final String group) {
-		return this.matched(group, true);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @throws IllegalStateException
-	 *             If no match has yet been attempted,
-	 *             or if the previous match operation failed
-	 *
-	 * @throws IllegalArgumentException
-	 *             If <code>validateGroup</code> is <code>true</code> and there is no capturing group in the pattern
-	 *             of the given group
-	 */
-	@Override
-	public boolean matched(final String group, final boolean validateGroup) {
-		try {
-			return this.start(group) != -1;
-		} catch (IllegalArgumentException e) {
-			if (validateGroup) {
-				throw e;
-			}
-
-			return false;
-		}
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @throws IllegalStateException
-	 *             If no match has yet been attempted,
-	 *             or if the previous match operation failed
-	 *
-	 * @throws IllegalArgumentException
-	 *             If there is no capturing group in the pattern
-	 *             of the given group
-	 */
-	@Override
-	public boolean matched(final String groupName, final int occurrence) {
-		return this.matched(groupName, occurrence, true);
-	}
-
-	/**
-	 * {@inheritDoc}
-	 *
-	 * @throws IllegalStateException
-	 *             If no match has yet been attempted,
-	 *             or if the previous match operation failed
-	 *
-	 * @throws IllegalArgumentException
-	 *             If <code>validateGroup</code> is <code>true</code> and there is no capturing group in the pattern
-	 *             of the given group
-	 */
-	@Override
-	public boolean matched(final String groupName, final int occurrence, final boolean validateGroup) {
-		try {
-			return this.start(groupName, occurrence) != -1;
-		} catch (IllegalArgumentException e) {
-			if (validateGroup) {
-				throw e;
-			}
-
-			return false;
-		}
 	}
 
 	/**
@@ -1610,15 +1241,15 @@ public final class Matcher implements MatchResult, Cloneable {
 					}
 					String gname = gsb.toString();
 					String mappingName = getMappingName(gname, 1);
-					if (!this.parentPattern.getGroupMapping()
-							.containsKey(
-									mappingName)) {
+					if (!this.pattern()
+							.getGroupMapping()
+							.containsKey(mappingName)) {
 						throw new IllegalArgumentException(
 								"No group with name <" + gname + ">");
 					}
-					mappedIndex = this.parentPattern.getGroupMapping()
-							.get(
-									mappingName);
+					mappedIndex = this.pattern()
+							.getGroupMapping()
+							.get(mappingName);
 					cursor++;
 				} else if (nextChar == '{') {
 					// TODO: don't create a matcher - performance hit
@@ -2228,23 +1859,7 @@ public final class Matcher implements MatchResult, Cloneable {
 	@Override
 	public String getGroupName(final int group) {
 		Integer groupIndex = this.getGroupIndex(group);
-		Map<String, Integer> groupMapping = this.parentPattern.getGroupMapping();
-
-		for (Entry<String, Integer> entry : groupMapping.entrySet()) {
-			if (entry.getValue().equals(groupIndex)) {
-				if (entry.getKey().charAt(0) != '[') {
-					String mappingName = entry.getKey();
-					String groupName = mappingName.substring(0, mappingName
-							.indexOf("["));
-
-					int groupCount = this.groupCount(groupName);
-
-					return groupCount == 1 ? groupName : mappingName;
-				}
-			}
-		}
-
-		return null;
+		return MatcherHelper.getGroupName(this, groupIndex);
 	}
 
 	/*
@@ -2339,6 +1954,7 @@ public final class Matcher implements MatchResult, Cloneable {
 		return index;
 	}
 
+
 	/**
 	 * Returns the mapped index for the specified group.
 	 *
@@ -2351,98 +1967,7 @@ public final class Matcher implements MatchResult, Cloneable {
 	 *             groupCount("[" + group + "]")} >= 2.
 	 */
 	Integer getGroupIndex(final int group) {
-		try {
-			String groupName = wrapIndex(getAbsoluteGroupIndex(group,
-					this.groupCount()));
-
-			return this.getGroupIndex0(groupName, "[0]");
-		} catch (IndexOutOfBoundsException e) {
-			throw noGroup(group);
-		} catch (IllegalArgumentException e) {
-			throw noGroup(group);
-		}
-	}
-
-	private static String[] parseGroup(final String group) {
-		String groupName;
-		String occurrence;
-
-		int bracketIndex = group.indexOf('[');
-
-		if (bracketIndex != -1) {
-			// Has bracket
-			// [1], [-1], [1][1], groupName[occurrence]
-
-			int lastBracketIndex = group.lastIndexOf('[');
-
-			if (bracketIndex == lastBracketIndex) {
-				// Has only one bracket
-				// [1], [-1], groupName[occurrence]
-
-				if (bracketIndex == 0) {
-					// Starts with bracket
-					// [1], [-1]
-
-					if (!group.endsWith("]")) {
-						throw noNamedGroup(group);
-					}
-
-					groupName = group;
-					occurrence = null;
-				} else {
-					// Has bracket, not a beginning
-					// groupName[occurrence]
-
-					if (!group.endsWith("]")) {
-						throw noNamedGroup(group);
-					}
-
-					groupName = group.substring(0, bracketIndex);
-
-					// Get part between brackets
-					occurrence = group.substring(bracketIndex + 1, group.length() - 1);
-				}
-			} else {
-				// Has two brackets
-				// [1][1], [1][-1]
-
-				if (bracketIndex != 0) {
-					throw noNamedGroup(group);
-				}
-
-				int closeBracket = group.indexOf(']');
-
-				if (closeBracket != lastBracketIndex - 1) {
-					throw noNamedGroup(group);
-				}
-
-				if (!group.endsWith("]")) {
-					throw noNamedGroup(group);
-				}
-
-				groupName = group.substring(0, lastBracketIndex);
-
-				if (groupName.indexOf('[', 1) != -1) {
-					// Has multiple opening brackets
-					// [[1]
-					throw noNamedGroup(group);
-				}
-
-				occurrence = group.substring(lastBracketIndex + 1, group.length() - 1);
-			}
-		} else {
-			// Has no bracket, just a group name
-			groupName = group;
-			occurrence = null;
-		}
-
-		// TODO: is there a better way to handle this case?
-		if (groupName.startsWith("-")) {
-			// Not allowed; for example, -1 isn't a valid group name ('-' isn't allowed in group names)
-			throw noNamedGroup(group);
-		}
-
-		return new String[] { groupName, occurrence };
+		return MatcherHelper.getGroupIndex(this, this.usedMatcher, group);
 	}
 
 	/**
@@ -2453,50 +1978,7 @@ public final class Matcher implements MatchResult, Cloneable {
 	 *             of the given group
 	 */
 	Integer getGroupIndex(final String group) {
-		// java.util.regex.Matcher matcher = fullGroupName.matcher(group);
-		//
-		// if (!matcher.matches())
-		// throw noNamedGroup(group);
-		//
-		// String part1 = matcher.group(1);
-		// String part2 = matcher.group(2);
-
-		String[] parts = parseGroup(group);
-		String part1 = parts[0];
-		String part2 = parts[1];
-
-		String groupName;
-		try {
-			groupName = this.parentPattern.normalizeGroupName(part1);
-		} catch (IllegalArgumentException e) {
-			throw noNamedGroup(group);
-		}
-		// String groupName = handleCase(matcher.group(1));
-		String groupOccurrence = part2;
-
-		if (groupOccurrence != null) {
-			int occurrence;
-			try {
-				occurrence = getAbsoluteGroupIndex(
-						parseInt(groupOccurrence),
-						this.groupCount(groupName));
-			} catch (IndexOutOfBoundsException e) {
-				throw noGroup(group);
-			} catch (IllegalArgumentException e) {
-				// Changed so that when not using matcher, if the occurrence isn't a number, the correct error is thrown
-				throw noNamedGroup(group);
-			}
-
-			if (groupName.length() == 0) {
-				return this.getGroupIndex(occurrence);
-			} else if (occurrence != 0) {
-				return this.getGroupIndex(groupName, occurrence);
-			}
-		}
-
-		return this.getGroupIndex0(groupName, groupOccurrence == null ? ""
-				: "[" +
-						groupOccurrence + "]");
+		return MatcherHelper.getGroupIndex(this, this.usedMatcher, group);
 	}
 
 	/**
@@ -2506,120 +1988,8 @@ public final class Matcher implements MatchResult, Cloneable {
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	Integer getGroupIndex(String groupName, int occurrence) {
-		// groupName = handleCase(groupName);
-		try {
-			groupName = this.parentPattern.normalizeGroupName(groupName);
-		} catch (IllegalArgumentException e) {
-			throw noGroup(groupName, occurrence);
-		}
-
-		if (groupName.length() == 0) {
-			return this.getGroupIndex(occurrence);
-		} else if (occurrence == 0) {
-			return this.getGroupIndex0(groupName, "[0]");
-		}
-
-		int passedOccurrence = occurrence;
-
-		try {
-			occurrence = getAbsoluteGroupIndex(occurrence,
-					this.groupCount(groupName));
-		} catch (IndexOutOfBoundsException e) {
-			throw noGroup(groupName, passedOccurrence);
-		}
-
-		Integer groupIndexI = this.parentPattern.getMappedIndex(groupName,
-				occurrence);
-
-		if (groupIndexI == null) {
-			if (groupName.charAt(0) == '[' && occurrence == 1) {
-				// ex. [3][1] - treat like [3]
-
-				Integer tmp = this.parentPattern.getGroupMapping().get(groupName);
-
-				// System.out.println(groupName + "\t" + passedOccurrence);
-
-				if (tmp == null) {
-					throw noGroup(groupName, passedOccurrence);
-				}
-
-				/*
-				 * if found, return group
-				 *
-				 * can't be a "branch reset" pattern (-2), because if it were
-				 * then the first occurrence MUST exist, and groupIndexI would
-				 * not be null
-				 */
-				return tmp;
-			}
-
-			throw noGroup(groupName, passedOccurrence);
-		}
-
-		return groupIndexI;
-	}
-
-	/**
-	 * Returns the mapped index for the first matching occurrence of the
-	 * specified group name, or the first occurrence if there are no
-	 * matches.
-	 *
-	 * @param occurrence0
-	 *            string appended after group name in exception, if thrown
-	 * @throws IllegalArgumentException
-	 *             if the specified group never occurs
-	 * @throws IllegalStateException
-	 *             If no match has yet been attempted, or if the previous match
-	 *             operation failed; only thrown if {@link #groupCount(String)
-	 *             groupCount(groupName)} >= 2.
-	 */
-	private Integer getGroupIndex0(String groupName, final String occurrence0) {
-		int groupCount = this.groupCount(groupName);
-
-		if (groupCount == 0) {
-			try {
-				// Check if numbered group
-				int groupNumber = Integer.parseInt(groupName);
-
-				groupCount = this.groupCount(groupNumber);
-
-				if (groupCount == 0) {
-					throw noGroup(groupName + occurrence0);
-				}
-
-				groupName = wrapIndex(groupNumber);
-			} catch (RuntimeException e) {
-				if (occurrence0.length() == 0) {
-					throw noNamedGroup(groupName);
-				} else {
-					throw noGroup(groupName + occurrence0);
-				}
-			}
-		}
-
-		Integer firstGroupIndex = this.parentPattern.getMappedIndex(groupName, 1);
-
-		if (groupCount == 1) {
-			return firstGroupIndex;
-		}
-
-		int occurrence = 0;
-		Integer groupIndexI;
-
-		while ((groupIndexI = this.parentPattern.getMappedIndex(groupName,
-				++occurrence)) != null) {
-			// if matched group
-
-			if (this.usedMatcher.start(groupIndexI) != -1) {
-				return groupIndexI;
-			}
-		}
-
-		// if no group matched anything (i.e. all null)
-
-		// return the index for the first group
-		return firstGroupIndex;
+	Integer getGroupIndex(final String groupName, final int occurrence) {
+		return MatcherHelper.getGroupIndex(this, this.usedMatcher, groupName, occurrence);
 	}
 
 	/**
@@ -2675,40 +2045,7 @@ public final class Matcher implements MatchResult, Cloneable {
 	@Override
 	@SuppressFBWarnings("RV_RETURN_VALUE_IGNORED_NO_SIDE_EFFECT")
 	public boolean containsKey(final Object key) {
-		if (key instanceof CharSequence) {
-			try {
-				this.getGroupIndex(key.toString());
-				return true;
-			} catch (IllegalArgumentException e) {
-				return false;
-			}
-		} else if (key instanceof Number) {
-			Number index = (Number) key;
-
-			try {
-				getAbsoluteGroupIndex(index.intValue(), this.groupCount());
-				return true;
-			} catch (IndexOutOfBoundsException e) {
-				return false;
-			}
-		}
-
-		throw new IllegalArgumentException("Requires a group name/index: " + key);
-	}
-
-	/**
-	 * @since 0.2
-	 */
-	@Override
-	public boolean containsValue(final Object value) {
-		for (int i = 1; i <= this.groupCount(); i++) {
-			String group = this.group(i);
-			if (Objects.equals(group, value)) {
-				return true;
-			}
-		}
-
-		return false;
+		return MatcherHelper.containsKey(this, this.usedMatcher, key);
 	}
 
 	/**
@@ -2730,156 +2067,6 @@ public final class Matcher implements MatchResult, Cloneable {
 	/**
 	 * @since 0.2
 	 */
-	private final Set<Entry<Integer, String>> entrySet = new AbstractSet<Entry<Integer, String>>() {
-		@Override
-		public Iterator<Entry<Integer, String>> iterator() {
-			return new Iterator<Entry<Integer, String>>() {
-				private int next = 0;
-
-				@Override
-				public boolean hasNext() {
-					return this.next < size();
-				}
-
-				@Override
-				public Entry<Integer, String> next() {
-					if (this.next >= size()) {
-						throw new NoSuchElementException(String.valueOf(this.next));
-					}
-
-					return Matcher.this.getEntry(this.next++);
-				}
-
-				@Override
-				public void remove() {
-					throw new UnsupportedOperationException();
-				}
-			};
-		}
-
-		@Override
-		public int size() {
-			return Matcher.this.groupCount() + 1;
-		}
-	};
-
-	/**
-	 * @since 0.2
-	 */
-	@Override
-	public Set<Entry<Integer, String>> entrySet() {
-		return this.entrySet;
-	}
-
-	/**
-	 * @since 0.2
-	 */
-	@Override
-	public String get(final Object key) {
-		if (key instanceof CharSequence) {
-			return this.group(key.toString());
-		} else if (key instanceof Number) {
-			Number index = (Number) key;
-
-			return this.group(index.intValue());
-		}
-
-		throw new IllegalArgumentException("No group " + key);
-	}
-
-	/**
-	 * @since 0.2
-	 */
-	private final Set<Integer> keySet = new AbstractSet<Integer>() {
-		@Override
-		public Iterator<Integer> iterator() {
-			return new Iterator<Integer>() {
-				private int next = 0;
-
-				@Override
-				public boolean hasNext() {
-					return this.next < size();
-				}
-
-				@Override
-				public Integer next() {
-					if (this.next >= size()) {
-						throw new NoSuchElementException(String.valueOf(this.next));
-					}
-
-					return this.next++;
-				}
-
-				@Override
-				public void remove() {
-					throw new UnsupportedOperationException();
-				}
-			};
-		}
-
-		@Override
-		public int size() {
-			return Matcher.this.groupCount() + 1;
-		}
-	};
-
-	/**
-	 * @since 0.2
-	 */
-	@Override
-	public Set<Integer> keySet() {
-		return this.keySet;
-	}
-
-	/**
-	 * Returns the size of a matcher. For a <code>MatchResult</code> this is the number of groups (excluding group 0).
-	 * Otherwise, it is the total number of matches.
-	 *
-	 * @since 0.2
-	 */
-	@Override
-	public int size() {
-		if (this.isMatchResult()) {
-			return this.groupCount();
-		} else {
-			// TODO: cache matches ??
-			int count = 0;
-			Matcher matcher = this.clone().reset();
-
-			while (matcher.find()) {
-				count++;
-			}
-
-			return count;
-		}
-	}
-
-	/**
-	 * @since 0.2
-	 */
-	private final List<String> values = new AbstractList<String>() {
-		@Override
-		public String get(final int index) {
-			return Matcher.this.group(index);
-		}
-
-		@Override
-		public int size() {
-			return Matcher.this.groupCount() + 1;
-		}
-	};
-
-	/**
-	 * @since 0.2
-	 */
-	@Override
-	public List<String> values() {
-		return this.values;
-	}
-
-	/**
-	 * @since 0.2
-	 */
 	private final Map<Integer, Entry<Integer, String>> entryCache = new HashMap<>(
 			2);
 
@@ -2887,50 +2074,17 @@ public final class Matcher implements MatchResult, Cloneable {
 	 *
 	 * @since 0.2
 	 */
+	@Override
 	public Entry<Integer, String> getEntry(final int group) {
-		Entry<Integer, String> entry = this.entryCache.get(group);
+		return this.entryCache.computeIfAbsent(group, MatchResult.super::getEntry);
+	}
 
-		if (entry != null) {
-			return entry;
-		}
+	private Matcher cloneReset() {
+		Matcher matcher = this.pattern().matcher(this.text());
+		matcher.useAnchoringBounds(this.hasAnchoringBounds());
+		matcher.useTransparentBounds(this.hasTransparentBounds());
 
-		entry = new Entry<Integer, String>() {
-			/**
-			 * <code>Map.Entry</code> interface method, not supported by this
-			 * implementation.
-			 *
-			 * @throws UnsupportedOperationException
-			 *             Always
-			 */
-			@Override
-			public String setValue(final String value) {
-				throw new UnsupportedOperationException();
-			}
-
-			/**
-			 * {@inheritDoc}
-			 */
-			@Override
-			public String getValue() {
-				return Matcher.this.group(group);
-			}
-
-			/**
-			 * {@inheritDoc}
-			 */
-			@Override
-			public Integer getKey() {
-				return group;
-			}
-
-			@Override
-			public String toString() {
-				return this.getKey() + "=" + this.getValue();
-			}
-		};
-
-		this.entryCache.put(group, entry);
-		return entry;
+		return matcher;
 	}
 
 	/**
@@ -2949,7 +2103,7 @@ public final class Matcher implements MatchResult, Cloneable {
 	@Override
 	public Iterator<MatchResult> iterator() {
 		// Iterator doesn't modify this Matcher
-		final Matcher matcher = this.clone().reset();
+		final Matcher matcher = this.cloneReset();
 
 		return new MatchResultIterator(matcher);
 	}
@@ -3049,7 +2203,7 @@ public final class Matcher implements MatchResult, Cloneable {
 	@Override
 	public boolean asBoolean() {
 		RegExPlusSupport.setLastMatcher(this);
-		return this.isMatchResult() ? this.matched() : this.find();
+		return this.find();
 	}
 
 	/**
@@ -3057,26 +2211,22 @@ public final class Matcher implements MatchResult, Cloneable {
 	 */
 	@Override
 	public Object getAt(int idx) {
-		if (this.isMatchResult()) {
-			return this.group(idx);
-		} else {
-			// TODO: optimize code
-			// NOTE: can produce different results than Groovy, since this code doesn't affect this Matcher
-			// (iterator does not affect this matcher)
-			List<MatchResult> results = this.getResults();
-			int count = results.size();
+		// TODO: optimize code
+		// NOTE: can produce different results than Groovy, since this code doesn't affect this Matcher
+		// (iterator does not affect this matcher)
+		List<MatchResult> results = this.getResults();
+		int count = results.size();
 
-			if (idx < -count || idx >= count) {
-				throw new IndexOutOfBoundsException("index is out of range " + (-count) + ".." + (count - 1)
-						+ " (index = " + idx + ")");
-			}
-
-			if (idx < 0) {
-				idx += count;
-			}
-
-			return results.get(idx);
+		if (idx < -count || idx >= count) {
+			throw new IndexOutOfBoundsException("index is out of range " + (-count) + ".." + (count - 1)
+					+ " (index = " + idx + ")");
 		}
+
+		if (idx < 0) {
+			idx += count;
+		}
+
+		return results.get(idx);
 	}
 
 	/**
@@ -3087,31 +2237,24 @@ public final class Matcher implements MatchResult, Cloneable {
 	public List getAt(final Collection<?> indexes) {
 		List matches = new ArrayList();
 
-		if (this.isMatchResult()) {
-			List<Integer> indexList = this.flattenGroupIndexes(indexes);
-			for (Integer group : indexList) {
-				matches.add(this.usedMatcher.group(group));
+		// TODO: optimize code
+		// NOTE: can produce different results than Groovy, since this code doesn't affect this Matcher
+		// (iterator does not affect this matcher)
+		List<Integer> indexList = flatten(indexes);
+		List<MatchResult> results = this.getResults();
+		int count = results.size();
+
+		for (int idx : indexList) {
+			if (idx < -count || idx >= count) {
+				throw new IndexOutOfBoundsException("index is out of range " + (-count) + ".." + (count - 1)
+						+ " (index = " + idx + ")");
 			}
-		} else {
-			// TODO: optimize code
-			// NOTE: can produce different results than Groovy, since this code doesn't affect this Matcher
-			// (iterator does not affect this matcher)
-			List<Integer> indexList = flatten(indexes);
-			List<MatchResult> results = this.getResults();
-			int count = results.size();
 
-			for (int idx : indexList) {
-				if (idx < -count || idx >= count) {
-					throw new IndexOutOfBoundsException("index is out of range " + (-count) + ".." + (count - 1)
-							+ " (index = " + idx + ")");
-				}
-
-				if (idx < 0) {
-					idx += count;
-				}
-
-				matches.add(results.get(idx));
+			if (idx < 0) {
+				idx += count;
 			}
+
+			matches.add(results.get(idx));
 		}
 
 		return matches;
@@ -3190,16 +2333,8 @@ public final class Matcher implements MatchResult, Cloneable {
 			classToCastFrom = "null";
 		}
 		return "Cannot cast object '" + objectToCast + "' " +
-				"with class '" + classToCastFrom + "' " +
-				"to class '" + classToCastTo.getName() + "'";
-	}
-
-	/**
-	 * {@inheritDoc}
-	 */
-	@Override
-	public String getAt(final String group) {
-		return this.group(group);
+		"with class '" + classToCastFrom + "' " +
+		"to class '" + classToCastTo.getName() + "'";
 	}
 
 	public MatchResult next() {
@@ -3235,5 +2370,189 @@ public final class Matcher implements MatchResult, Cloneable {
 	 */
 	public Matcher positive() {
 		return this;
+	}
+
+	private static class ImmutableMatchResult implements MatchResult {
+		private final Pattern pattern;
+		private final java.util.regex.MatchResult usedMatcher;
+		private final String text;
+
+		private final boolean treatNullAsEmptyString;
+
+		ImmutableMatchResult(final Pattern pattern,
+				final java.util.regex.MatchResult internalMatchResult,
+				final String text, final boolean treatNullAsEmptyString) {
+			this.pattern = pattern;
+			this.usedMatcher = internalMatchResult;
+			this.text = text;
+			this.treatNullAsEmptyString = treatNullAsEmptyString;
+		}
+
+		@Override
+		public int start() {
+			return this.usedMatcher.start();
+		}
+
+		@Override
+		public int end() {
+			return this.usedMatcher.end();
+		}
+
+		Integer getGroupIndex(final int group) {
+			return MatcherHelper.getGroupIndex(this, this.usedMatcher, group);
+		}
+
+		Integer getGroupIndex(final String group) {
+			return MatcherHelper.getGroupIndex(this, this.usedMatcher, group);
+		}
+
+		Integer getGroupIndex(final String group, final int occurrence) {
+			return MatcherHelper.getGroupIndex(this, this.usedMatcher, group, occurrence);
+		}
+
+		@Override
+		public int start(final int group) {
+			return this.usedMatcher.start(this.getGroupIndex(group));
+		}
+
+		@Override
+		public int start(final String group) {
+			return this.usedMatcher.start(this.getGroupIndex(group));
+		}
+
+		@Override
+		public int start(final String groupName, final int occurrence) {
+			return this.usedMatcher.start(this.getGroupIndex(groupName, occurrence));
+		}
+
+		@Override
+		public int end(final int group) {
+			return this.usedMatcher.end(this.getGroupIndex(group));
+		}
+
+		@Override
+		public int end(final String group) {
+			return this.usedMatcher.end(this.getGroupIndex(group));
+		}
+
+		@Override
+		public int end(final String groupName, final int occurrence) {
+			return this.usedMatcher.end(this.getGroupIndex(groupName, occurrence));
+		}
+
+		@Override
+		public int occurrence(final String groupName) {
+			return MatcherHelper.occurrence(this, this.usedMatcher, groupName);
+		}
+
+		/**
+		 * Returns the captured contents of the group with the given index.
+		 *
+		 * @param mappedIndex
+		 *            the index for the group (in the internal matcher) whose
+		 *            contents are returned
+		 * @return the captured contents of the group with the given index
+		 * @see java.util.regex.Matcher#group(int)
+		 */
+		private String groupPrivate(final int mappedIndex) {
+			String value = this.usedMatcher.group(mappedIndex);
+
+			return value == null && this.treatNullAsEmptyString ? "" : value;
+		}
+
+		private String groupPrivate(final int mappedIndex, final String defaultValue) {
+			boolean matched = this.usedMatcher.start(mappedIndex) != -1;
+
+			return (matched ? this.usedMatcher.group(mappedIndex) : defaultValue);
+		}
+
+		private boolean isEmptyPrivate(final int mappedIndex) {
+			int start = this.usedMatcher.start(mappedIndex);
+			int end = this.usedMatcher.end(mappedIndex);
+
+			// length zero match, and group actually matched (start != -1)
+			return start == end && start != -1;
+		}
+
+		@Override
+		public String group() {
+			return this.groupPrivate(0);
+		}
+
+		@Override
+		public String group(final int group) {
+			return this.groupPrivate(this.getGroupIndex(group));
+		}
+
+		@Override
+		public String group(final int group, final String defaultValue) {
+			return this.groupPrivate(this.getGroupIndex(group), defaultValue);
+		}
+
+		@Override
+		public String group(final String group) {
+			return this.groupPrivate(this.getGroupIndex(group));
+		}
+
+		@Override
+		public String group(final String group, final String defaultValue) {
+			return this.groupPrivate(this.getGroupIndex(group), defaultValue);
+		}
+
+		@Override
+		public String group(final String groupName, final int occurrence) {
+			return this.groupPrivate(this.getGroupIndex(groupName, occurrence));
+		}
+
+		@Override
+		public String group(final String groupName, final int occurrence, final String defaultValue) {
+			return this.groupPrivate(this.getGroupIndex(groupName, occurrence), defaultValue);
+		}
+
+		@Override
+		public boolean isEmpty() {
+			return this.isEmptyPrivate(0);
+		}
+
+		@Override
+		public boolean isEmpty(final int group) {
+			return this.isEmptyPrivate(this.getGroupIndex(group));
+		}
+
+		@Override
+		public boolean isEmpty(final String group) {
+			return this.isEmptyPrivate(this.getGroupIndex(group));
+		}
+
+		@Override
+		public boolean isEmpty(final String groupName, final int occurrence) {
+			return this.isEmptyPrivate(this.getGroupIndex(groupName, occurrence));
+		}
+
+		@Override
+		public Pattern pattern() {
+			return this.pattern;
+		}
+
+		@Override
+		public String text() {
+			return this.text;
+		}
+
+		@Override
+		public String getGroupName(final int group) {
+			Integer groupIndex = this.getGroupIndex(group);
+			return MatcherHelper.getGroupName(this, groupIndex);
+		}
+
+		@Override
+		public boolean treatNullAsEmptyString() {
+			return this.treatNullAsEmptyString;
+		}
+
+		@Override
+		public boolean containsKey(final Object key) {
+			return MatcherHelper.containsKey(this, this.usedMatcher, key);
+		}
 	}
 }

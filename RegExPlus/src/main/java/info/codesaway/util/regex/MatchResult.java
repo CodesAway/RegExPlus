@@ -1,7 +1,15 @@
 package info.codesaway.util.regex;
 
+import static info.codesaway.util.regex.Pattern.wrapIndex;
+
+import java.util.AbstractList;
+import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.AbstractSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -64,7 +72,7 @@ import java.util.Set;
  */
 // public interface MatchResult extends Iterable<List<String>>, Map<Integer, String>
 // public interface MatchResult extends Iterable<List<String>>
-public interface MatchResult extends Iterable<MatchResult>
+public interface MatchResult
 // public interface MatchResult extends Iterable<MatchResult>, Map<Integer, String>
 {
 	/**
@@ -266,7 +274,20 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *         index
 	 *
 	 */
-	public int occurrence(int groupIndex);
+	public default int occurrence(final int groupIndex) {
+		try {
+			String groupName = wrapIndex(Matcher.getAbsoluteGroupIndex(
+					groupIndex, this.groupCount()));
+
+			if (this.groupCount(groupName) == 0) {
+				throw Matcher.noGroup(groupIndex);
+			}
+
+			return this.occurrence(groupName);
+		} catch (IndexOutOfBoundsException e) {
+			throw Matcher.noGroup(groupIndex);
+		}
+	}
 
 	/**
 	 * Returns the occurrence of the first <i>matched</i> group with the given
@@ -567,12 +588,51 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *
 	 * @return The number of capturing groups in this matcher result's pattern
 	 */
-	public int groupCount();
+	public default int groupCount() {
+		return this.pattern().groupCount();
+	}
 
 	/**
+	 * Returns the number of capturing groups (with the given group index) in
+	 * this matcher's pattern.
+	 *
+	 * <p><b>Note</b>: in most cases, this return will be 1 - the only exception
+	 * is in the case
+	 * of a "branch reset" pattern, where there may be multiple groups with the
+	 * same group index.
+	 *
+	 * <p>For example, </p>
+	 * <blockquote><pre><code><span style="color: green"
+	 * >// Outputs 2, since there are two groups <!--
+	 * -->that have the group index of 1</span>
+	 * System.out.println(Pattern.compile("(?|(1a)|(1b))").groupCount(1));</code
+	 * ></pre>
+	 * </blockquote>
+	 *
+	 * <p>Group zero denotes the entire pattern by convention. It is not
+	 * included in this count.</p>
+	 *
+	 * <p>Any non-negative integer smaller than or equal to the value returned
+	 * by this method is guaranteed to be a valid occurrence (for a <a
+	 * href="#group">group</a>,
+	 * <i>groupName</i><tt>[</tt><i>occurrence</i><tt>]</tt>) for this
+	 * matcher.</p>
+	 *
+	 * <p><b>Note</b>: unlike other methods, this
+	 * method doesn't throw an exception if the specified group doesn't exist.
+	 * Instead, zero is returned, since the number of groups with the
+	 * (non-existent) group name is zero.
+	 *
+	 * @param group
+	 *            The index of a capturing group in this matcher's pattern
+	 *
+	 * @return The number of capturing groups (with the given group index) in
+	 *         this matcher's pattern
 	 * @since 0.2
 	 */
-	public int groupCount(int group);
+	public default int groupCount(final int group) {
+		return this.pattern().groupCount(group);
+	}
 
 	/**
 	 * Returns the number of capturing groups (with the given group name) in
@@ -600,7 +660,9 @@ public interface MatchResult extends Iterable<MatchResult>
 	 * @return The number of capturing groups (with the given group name) in
 	 *         this matcher's pattern
 	 */
-	public int groupCount(String groupName);
+	public default int groupCount(final String groupName) {
+		return this.pattern().groupCount(groupName);
+	}
 
 	/**
 	 * Indicates whether this match has any capturing groups.
@@ -609,7 +671,9 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *
 	 * @since 0.2
 	 */
-	public boolean hasGroup();
+	public default boolean hasGroup() {
+		return this.pattern().hasGroup();
+	}
 
 	/**
 	 * Indicates whether this match contains the specified group.
@@ -620,7 +684,9 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *
 	 * @since 0.2
 	 */
-	public boolean hasGroup(int group);
+	public default boolean hasGroup(final int group) {
+		return this.pattern().hasGroup(group);
+	}
 
 	/**
 	 * Indicates whether this match contains the specified group.
@@ -631,7 +697,9 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *
 	 * @since 0.2
 	 */
-	public boolean hasGroup(String group);
+	public default boolean hasGroup(final String group) {
+		return this.pattern().hasGroup(group);
+	}
 
 	/**
 	 * Indicates whether this match contains the specified group.
@@ -645,7 +713,9 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *
 	 * @since 0.2
 	 */
-	public boolean hasGroup(String groupName, int occurrence);
+	public default boolean hasGroup(final String groupName, final int occurrence) {
+		return this.pattern().hasGroup(groupName, occurrence);
+	}
 
 	/**
 	 * Returns whether the match was successful.
@@ -661,7 +731,13 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *
 	 * @return <code>true</code> if the match was successful
 	 */
-	public boolean matched();
+	public default boolean matched() {
+		try {
+			return this.start() != -1;
+		} catch (RuntimeException e) {
+			return false;
+		}
+	}
 
 	/**
 	 * Returns whether the specified group matched any part of the input
@@ -692,7 +768,9 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *             If there is no capturing group in the pattern
 	 *             with the given index
 	 */
-	public boolean matched(int group);
+	public default boolean matched(final int group) {
+		return this.matched(group, true);
+	}
 
 	/**
 	 * Returns whether the specified group matched any part of the input
@@ -726,7 +804,17 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *             If <code>validateGroup</code> is <code>true</code> and there is no capturing group in the pattern
 	 *             with the given index
 	 */
-	public boolean matched(int group, boolean validateGroup);
+	public default boolean matched(final int group, final boolean validateGroup) {
+		try {
+			return this.start(group) != -1;
+		} catch (IndexOutOfBoundsException e) {
+			if (validateGroup) {
+				throw e;
+			}
+
+			return false;
+		}
+	}
 
 	/**
 	 * Returns whether the specified <a href="Pattern.html#group">group</a>
@@ -752,7 +840,9 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public boolean matched(String group);
+	public default boolean matched(final String group) {
+		return this.matched(group, true);
+	}
 
 	/**
 	 * Returns whether the specified <a href="Pattern.html#group">group</a>
@@ -781,7 +871,17 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *             If <code>validateGroup</code> is <code>true</code> and there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public boolean matched(String group, boolean validateGroup);
+	public default boolean matched(final String group, final boolean validateGroup) {
+		try {
+			return this.start(group) != -1;
+		} catch (IllegalArgumentException e) {
+			if (validateGroup) {
+				throw e;
+			}
+
+			return false;
+		}
+	}
 
 	/**
 	 * Returns whether the specified <a href="Pattern.html#group">group</a>
@@ -819,7 +919,9 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *             If there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public boolean matched(String groupName, int occurrence);
+	public default boolean matched(final String groupName, final int occurrence) {
+		return this.matched(groupName, occurrence, true);
+	}
 
 	/**
 	 * Returns whether the specified <a href="Pattern.html#group">group</a>
@@ -861,7 +963,17 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *             If <code>validateGroup</code> is <code>true</code> and there is no capturing group in the pattern
 	 *             of the given group
 	 */
-	public boolean matched(String groupName, int occurrence, boolean validateGroup);
+	public default boolean matched(final String groupName, final int occurrence, final boolean validateGroup) {
+		try {
+			return this.start(groupName, occurrence) != -1;
+		} catch (IllegalArgumentException e) {
+			if (validateGroup) {
+				throw e;
+			}
+
+			return false;
+		}
+	}
 
 	/**
 	 * Returns whether the previous match matched the empty string.
@@ -1027,32 +1139,132 @@ public interface MatchResult extends Iterable<MatchResult>
 	/**
 	 * @since 0.2
 	 */
-	public boolean containsValue(Object value);
+	public default boolean containsValue(final Object value) {
+		for (int i = 1; i <= this.groupCount(); i++) {
+			String group = this.group(i);
+			if (Objects.equals(group, value)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	/**
+	 *
+	 * @since 2.0
+	 */
+	public default Entry<Integer, String> getEntry(final int group) {
+		return new SimpleImmutableEntry<>(group, MatchResult.this.group(group));
+	}
 
 	/**
 	 * @since 0.2
 	 */
-	public Set<Entry<Integer, String>> entrySet();
+	public default Set<Entry<Integer, String>> entrySet() {
+		return new AbstractSet<Entry<Integer, String>>() {
+			@Override
+			public Iterator<Entry<Integer, String>> iterator() {
+				return new Iterator<Entry<Integer, String>>() {
+					private int next = 0;
+
+					@Override
+					public boolean hasNext() {
+						return this.next < size();
+					}
+
+					@Override
+					public Entry<Integer, String> next() {
+						if (this.next >= size()) {
+							throw new NoSuchElementException(String.valueOf(this.next));
+						}
+
+						return MatchResult.this.getEntry(this.next++);
+					}
+
+					@Override
+					public void remove() {
+						throw new UnsupportedOperationException();
+					}
+				};
+			}
+
+			@Override
+			public int size() {
+				return MatchResult.this.groupCount() + 1;
+			}
+		};
+	}
 
 	/**
 	 * @since 0.2
 	 */
-	public String get(Object key);
+	public default String get(final Object key) {
+		if (key instanceof CharSequence) {
+			return this.group(key.toString());
+		} else if (key instanceof Number) {
+			Number index = (Number) key;
+
+			return this.group(index.intValue());
+		}
+
+		throw new IllegalArgumentException("No group " + key);
+	}
 
 	/**
 	 * @since 0.2
 	 */
-	public Set<Integer> keySet();
+	public default Set<Integer> keySet() {
+		return new AbstractSet<Integer>() {
+			@Override
+			public Iterator<Integer> iterator() {
+				return new Iterator<Integer>() {
+					private int next = 0;
+
+					@Override
+					public boolean hasNext() {
+						return this.next < size();
+					}
+
+					@Override
+					public Integer next() {
+						if (this.next >= size()) {
+							throw new NoSuchElementException(String.valueOf(this.next));
+						}
+
+						return this.next++;
+					}
+
+					@Override
+					public void remove() {
+						throw new UnsupportedOperationException();
+					}
+				};
+			}
+
+			@Override
+			public int size() {
+				return MatchResult.this.groupCount() + 1;
+			}
+		};
+	}
 
 	/**
 	 * @since 0.2
 	 */
-	public int size();
+	public default List<String> values() {
+		return new AbstractList<String>() {
+			@Override
+			public String get(final int index) {
+				return MatchResult.this.group(index);
+			}
 
-	/**
-	 * @since 0.2
-	 */
-	public List<String> values();
+			@Override
+			public int size() {
+				return MatchResult.this.groupCount() + 1;
+			}
+		};
+	}
 
 	/* Groovy methods - makes RegExPlus groovier */
 
@@ -1063,7 +1275,9 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *
 	 * @since 0.2
 	 */
-	public boolean asBoolean();
+	public default boolean asBoolean() {
+		return this.matched();
+	}
 
 	/**
 	 * Alias for {@link #group(int)}
@@ -1072,7 +1286,9 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *
 	 * @since 0.2
 	 */
-	public Object getAt(int group);
+	public default Object getAt(final int group) {
+		return this.group();
+	}
 
 	/**
 	 * Alias for {@link #group(String)}
@@ -1081,5 +1297,7 @@ public interface MatchResult extends Iterable<MatchResult>
 	 *
 	 * @since 0.2
 	 */
-	public String getAt(String group);
+	public default String getAt(final String group) {
+		return this.group(group);
+	}
 }

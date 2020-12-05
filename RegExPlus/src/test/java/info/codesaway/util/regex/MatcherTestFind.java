@@ -1,5 +1,6 @@
 package info.codesaway.util.regex;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
 
 import java.util.Arrays;
@@ -46,10 +47,10 @@ public class MatcherTestFind {
 	@Parameters
 	public static Collection<Object[]> data() {
 		return Arrays.asList(new Object[][] { { null, "ab", "(a)?a(?(1)b|c)" }, { "aab", "aab", "(a)?a(?(1)b|c)" },
-				{ "ac", "ac", "(a)?a(?(1)b|c)" }, { "abcabc11", "abcabc11", "(?<test>abc)()()()()()()()()()\\111" },
-				{ "abcabc11", "abcabc11", "(?<test>abc)()()()()()()()()()\\g{test}11" },
-				//				{ null, "abcabc11",
-				//				"(?<test>abc)()()()()()()()()()\\g{11}1" },
+			{ "ac", "ac", "(a)?a(?(1)b|c)" }, { "abcabc11", "abcabc11", "(?<test>abc)()()()()()()()()()\\111" },
+			{ "abcabc11", "abcabc11", "(?<test>abc)()()()()()()()()()\\g{test}11" },
+			//				{ null, "abcabc11",
+			//				"(?<test>abc)()()()()()()()()()\\g{11}1" },
 		});
 	}
 
@@ -76,7 +77,13 @@ public class MatcherTestFind {
 		Matcher m = p.matcher(this.input);
 		String actual = (m.find() ? m.group() : null);
 
+		MatchResult r = m.toMatchResult();
+
 		assertEquals(this.match, actual);
+
+		if (m.matched()) {
+			assertThat(r.group()).isEqualTo(this.match);
+		}
 	}
 
 	//	/**
